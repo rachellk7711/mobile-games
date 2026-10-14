@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>모바일 게임 두 편</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nanum+Brush+Script&family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<style>
+/* Layout: two game "cabinets" side by side (stacked on phones), each wearing its own game's palette. */
+:root{--bg:#141311;--fg:#ece8df;--muted:#a39d91;--line:rgba(236,232,223,.14);color-scheme:dark;}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;min-height:100%;}
+body{background:var(--bg);color:var(--fg);font-family:"IBM Plex Sans KR",system-ui,sans-serif;word-break:keep-all;
+  padding:calc(env(safe-area-inset-top,0px) + 28px) 16px calc(env(safe-area-inset-bottom,0px) + 28px);}
+main{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:22px;}
+h1{margin:0;font-size:15px;font-weight:600;letter-spacing:.2em;color:var(--muted);}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:16px;}
+a.card{display:flex;flex-direction:column;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;border:1px solid var(--line);transition:transform .2s;min-width:0;}
+a.card:hover,a.card:focus-visible{transform:translateY(-3px);}
+a.card:focus-visible{outline:2px solid var(--fg);outline-offset:3px;}
+.shot{aspect-ratio:4/5;overflow:hidden;position:relative;max-width:100%;}
+.shot img{width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block;}
+.body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px;}
+.name{font-size:34px;line-height:1;}
+.tag{font-size:12px;letter-spacing:.08em;}
+.desc{font-size:14px;line-height:1.6;}
+.play{margin-top:6px;align-self:flex-start;font-weight:600;font-size:14px;padding:9px 16px;border-radius:10px;}
+a.card.abyss{background:#030b12;}
+.abyss .name{font-family:"Black Han Sans",sans-serif;color:#6ff3e0;}
+.abyss .tag{color:#ffb84d;}
+.abyss .desc{color:#9ec3c5;}
+.abyss .play{background:#6ff3e0;color:#02161b;}
+a.card.muk{background:#e9e5da;color:#1b1a17;}
+.muk .name{font-family:"Nanum Brush Script",serif;font-size:48px;}
+.muk .tag{color:#b3261e;}
+.muk .desc{color:#4c4942;}
+.muk .play{background:#1b1a17;color:#e9e5da;}
+footer{font-size:12px;color:var(--muted);line-height:1.6;}
+</style>
+</head>
+<body>
+<main>
+  <h1>MOBILE GAMES · 2</h1>
+  <div class="grid">
+    <a class="card abyss" href="abyss-dive/index.html">
+      <div class="shot"><img src="abyss-dive/screenshots/13_z2.png" alt="심연 잠항 플레이 화면: 어두운 심해에서 빛나는 생물들"></div>
+      <div class="body">
+        <div class="tag">로그라이트 슈팅 · 약 15분</div>
+        <div class="name">심연 잠항</div>
+        <p class="desc">잠수정으로 수심 10,935 m 챌린저 해연까지. 깊어질수록 빛이 사라지고, 생물 발광과 탐조등만 남습니다. 무기 5종, 생물 8종, 보스 4종, 심해 도감.</p>
+        <span class="play">플레이</span>
+      </div>
+    </a>
+    <a class="card muk" href="mukseon/index.html">
+      <div class="shot"><img src="mukseon/screenshots/13_night.png" alt="묵선 플레이 화면: 달밤의 수묵화 절벽을 먹줄로 오르는 인물"></div>
+      <div class="body">
+        <div class="tag">원터치 그래플링 · 무한 상승</div>
+        <div class="name">묵선</div>
+        <p class="desc">수묵화 족자 속 절벽을 먹줄 하나로 오릅니다. 누르면 걸고, 떼면 날아오릅니다. 아래에서는 먹물이 차오릅니다. 구역 6개, 오늘의 족자, 낙관첩.</p>
+        <span class="play">플레이</span>
+      </div>
+    </a>
+  </div>
+  <footer>두 게임 모두 이미지와 사운드 파일 없이 Canvas와 WebAudio로 만들었습니다. 휴대폰 세로 화면에 맞췄고, PC에서는 키보드로도 할 수 있습니다.</footer>
+</main>
+</body>
+</html>

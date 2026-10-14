@@ -1,0 +1,1753 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b1a17">
+<meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body style="margin:0">
+<title>묵선</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Brush+Script&family=Gowun+Batang:wght@400;700&display=swap">
+<style>
+/* Layout: a hanging scroll (족자) — one vertical painted strip centred on screen, wooden rollers top and bottom,
+   HUD written into the margins like a painter's inscription and seal. Single paper-and-ink world by design. */
+:root{
+  --paper:#e9e5da;      /* hanji */
+  --paper-2:#d9d3c3;    /* aged edge */
+  --ink:#1b1a17;        /* sumi ink */
+  --wash:#6f6c64;       /* diluted ink */
+  --seal:#b3261e;       /* cinnabar seal paste */
+  --gold:#b8913e;       /* gold leaf */
+  --night:#22293b;      /* moonlit indigo */
+  --f-brush:"Nanum Brush Script","Gowun Batang",serif;
+  --f-body:"Gowun Batang","Apple SD Gothic Neo","Malgun Gothic",serif;
+  color-scheme:light;
+}
+[hidden]{display:none!important;}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{background:#2a2622;color:var(--ink);font-family:var(--f-body);overflow:hidden;word-break:keep-all;overflow-wrap:break-word;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;}
+#game{position:fixed;inset:0;}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+button{font-family:var(--f-body);cursor:pointer;-webkit-tap-highlight-color:transparent;color:inherit;}
+button:focus-visible{outline:2px solid var(--seal);outline-offset:3px;}
+
+/* HUD */
+#hud{position:absolute;inset:0;pointer-events:none;
+  padding:calc(env(safe-area-inset-top,0px) + 8px) calc(env(safe-area-inset-right,0px) + 12px) calc(env(safe-area-inset-bottom,0px) + 12px) calc(env(safe-area-inset-left,0px) + 12px);}
+.hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.height{font-family:var(--f-brush);font-size:clamp(46px,13vw,64px);line-height:.9;color:var(--ink);text-shadow:0 0 12px rgba(233,229,218,.9),0 0 3px rgba(233,229,218,.9);font-variant-numeric:tabular-nums;}
+.height small{font-size:.5em;margin-left:2px;}
+.sub{display:inline-block;font-size:12px;color:#4c4942;background:rgba(233,229,218,.7);border-radius:10px;padding:1px 8px;margin-top:4px;}
+#hud.night .height{color:#efe9da;text-shadow:0 0 14px rgba(20,24,36,.9);}
+#hud.night .sub{color:#d6d0c1;background:rgba(20,24,36,.55);}
+.iconbtn{pointer-events:auto;width:42px;height:42px;border-radius:50%;border:1.5px solid rgba(27,26,23,.55);background:rgba(233,229,218,.7);display:grid;place-items:center;font-size:15px;font-weight:700;}
+.combo{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 96px);text-align:center;font-family:var(--f-brush);font-size:34px;color:var(--seal);text-shadow:0 0 10px rgba(233,229,218,.95);opacity:0;transition:opacity .2s, transform .2s;transform:scale(.9);}
+.combo.on{opacity:1;transform:scale(1);}
+.pows{display:flex;gap:6px;margin-top:6px;}
+.lives{display:flex;gap:4px;align-items:center;margin-right:2px;}
+.lives i{width:14px;height:14px;border-radius:2px;border:1.5px solid var(--seal);transform:rotate(-6deg);}
+.lives i.on{background:var(--seal);box-shadow:inset 0 0 0 2px rgba(246,239,226,.45);}
+.pow{display:flex;align-items:center;gap:4px;font-size:12px;background:rgba(233,229,218,.82);border:1px solid rgba(27,26,23,.35);border-radius:14px;padding:3px 8px 3px 4px;}
+.pow i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-style:normal;color:#fff;font-size:11px;background:var(--seal);}
+.pow b{font-variant-numeric:tabular-nums;font-weight:700;}
+
+#banner{position:absolute;left:16px;right:16px;top:30%;text-align:center;pointer-events:none;opacity:0;transition:opacity .6s;}
+#banner.show{opacity:1;}
+#banner .b1{font-size:12px;letter-spacing:.4em;color:var(--wash);}
+#banner .b2{font-family:var(--f-brush);font-size:clamp(46px,15vw,74px);line-height:1;color:var(--ink);text-shadow:0 0 18px rgba(233,229,218,.95);}
+#banner .b3{font-size:13px;color:var(--wash);margin-top:2px;}
+#banner.night .b2{color:#f1ecdf;text-shadow:0 0 18px rgba(20,24,36,.95);}
+#banner.night .b1,#banner.night .b3{color:#bdb7a8;}
+
+/* Screens */
+.screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow-y:auto;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);
+  background:radial-gradient(ellipse at 50% 40%,rgba(233,229,218,.35),rgba(233,229,218,.82) 75%);}
+.screen.dim{background:radial-gradient(ellipse at 50% 40%,rgba(233,229,218,.6),rgba(233,229,218,.92) 75%);}
+.panel{width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px;margin:auto;align-items:stretch;}
+.titlebox{display:flex;justify-content:center;align-items:flex-start;gap:14px;}
+.title{font-family:var(--f-brush);font-size:clamp(110px,36vw,170px);line-height:.82;writing-mode:vertical-rl;letter-spacing:-.04em;color:var(--ink);text-shadow:0 2px 0 rgba(27,26,23,.08);}
+.sealmark{writing-mode:vertical-rl;background:var(--seal);color:#f6efe2;font-size:15px;font-weight:700;padding:10px 6px;border-radius:4px;letter-spacing:.2em;margin-top:18px;box-shadow:inset 0 0 0 2px rgba(246,239,226,.35);}
+.poem{text-align:center;font-size:14.5px;line-height:1.75;color:#3d3a34;text-wrap:balance;}
+.btn{border:0;border-radius:10px;padding:15px 18px;font-size:18px;font-weight:700;letter-spacing:.06em;background:var(--ink);color:var(--paper);box-shadow:0 8px 20px -10px rgba(27,26,23,.7);}
+.btn:active{transform:translateY(1px);}
+.btn.seal{background:var(--seal);color:#f6efe2;}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px rgba(27,26,23,.55);font-size:15px;padding:12px 16px;}
+.btnrow{display:flex;gap:10px;}
+.btnrow>*{flex:1;min-width:0;}
+.best{text-align:center;font-size:13px;color:var(--wash);}
+.how{display:grid;gap:6px;font-size:13px;color:#4c4942;line-height:1.55;border-top:1px solid rgba(27,26,23,.2);padding-top:12px;}
+.how b{color:var(--ink);}
+.k{text-align:center;font-size:12px;letter-spacing:.4em;color:var(--seal);}
+.h{text-align:center;font-family:var(--f-brush);font-size:60px;line-height:1;}
+.stats{display:grid;grid-template-columns:1fr 1fr;border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);}
+.stats div{padding:10px 8px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid rgba(27,26,23,.15);}
+.stats div:nth-child(odd){border-right:1px solid rgba(27,26,23,.15);}
+.stats span{font-size:11.5px;color:var(--wash);}
+.stats b{font-size:22px;font-variant-numeric:tabular-nums;}
+.newrec{display:inline-block;align-self:center;background:var(--seal);color:#f6efe2;padding:4px 12px;border-radius:3px;font-weight:700;letter-spacing:.2em;transform:rotate(-4deg);}
+.toggle{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(27,26,23,.2);font-size:15px;}
+.toggle button{min-width:64px;border-radius:16px;border:1.5px solid var(--ink);background:transparent;padding:5px 12px;font-size:13px;}
+.toggle button.on{background:var(--ink);color:var(--paper);}
+.sealgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 8px;}
+.seal{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;min-width:0;}
+.seal canvas{width:72px;height:72px;}
+.seal b{font-size:13px;display:block;}
+.seal span{display:block;font-size:11px;color:var(--wash);line-height:1.4;}
+.seal.locked b{color:var(--wash);}
+#scrSeals{align-items:flex-start;}
+.lede{text-align:center;font-size:14px;line-height:1.7;color:#3d3a34;}
+@media (max-height:540px){
+  .titlebox{display:none;}
+  .panel{gap:10px;max-width:520px;}
+  .how{display:none;}
+  .h{font-size:44px;}
+  .stats{grid-template-columns:repeat(4,1fr);}
+  .stats div:nth-child(odd){border-right:0;}
+}
+@media (prefers-reduced-motion:reduce){#banner,.combo{transition:none}}
+</style>
+
+<div id="game">
+  <canvas id="cv" aria-label="게임 화면"></canvas>
+
+  <div id="hud" hidden>
+    <div class="hrow">
+      <div>
+        <div class="height"><span id="hH">0</span><small>m</small></div>
+        <div class="sub" id="hSub">새벽 송림 · 매화 0</div>
+        <div class="pows" id="hPows"></div>
+      </div>
+      <button class="iconbtn" id="btnPause" aria-label="일시정지">❚❚</button>
+    </div>
+    <div class="combo" id="hCombo"></div>
+  </div>
+
+  <div id="banner"><div class="b1" id="bn1"></div><div class="b2" id="bn2"></div><div class="b3" id="bn3"></div></div>
+
+  <div class="screen" id="scrMenu">
+    <div class="panel">
+      <div class="titlebox"><div class="title">묵선</div><div class="sealmark">墨線</div></div>
+      <p class="poem">먹줄 하나로 족자 속 산을 오르세요.<br>아래에서는 먹물이 차오릅니다.</p>
+      <button class="btn" id="btnStart">오르기</button>
+      <div class="btnrow">
+        <button class="btn ghost" id="btnDaily">오늘의 족자</button>
+        <button class="btn ghost" id="btnSeals">낙관첩</button>
+      </div>
+      <div class="best" id="bestLine"></div>
+      <div class="how">
+        <div><b>누르고 있기</b> · 가장 가까운 매듭에 먹줄을 걸고 끌어올립니다</div>
+        <div><b>손 떼기</b> · 줄을 놓고 그 기세로 날아오릅니다</div>
+        <div><b>높이 솟구칠 때 놓기</b> · 명필 판정, 연속하면 점수가 커집니다</div>
+        <div><b>붉은 매듭</b> · 오래 매달리면 끊어집니다</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen dim" id="scrSeals" hidden>
+    <div class="panel">
+      <div class="k">SEALS · <span id="sealCount"></span></div><div class="h">낙관첩</div>
+      <div class="sealgrid" id="sealGrid"></div>
+      <button class="btn ghost" id="btnSealsBack">돌아가기</button>
+    </div>
+  </div>
+
+  <div class="screen dim" id="scrPause" hidden>
+    <div class="panel">
+      <div class="k">PAUSE</div><div class="h">쉬어 가기</div>
+      <div class="toggle"><span>소리</span><button id="tgSound" class="on">켜짐</button></div>
+      <div class="toggle"><span>화면 흔들림</span><button id="tgShake" class="on">켜짐</button></div>
+      <button class="btn" id="btnResume">계속 오르기</button>
+      <button class="btn ghost" id="btnQuit">그만두기</button>
+    </div>
+  </div>
+
+  <div class="screen dim" id="scrEnd" hidden>
+    <div class="panel">
+      <div class="k" id="endK">먹물에 잠기다</div>
+      <div class="h" id="endH">0 m</div>
+      <div class="newrec" id="endNew" hidden>신기록</div>
+      <p class="lede" id="endLede"></p>
+      <div class="stats" id="endStats"></div>
+      <div class="best" id="endBest"></div>
+      <button class="btn" id="btnRetry">다시 오르기</button>
+      <button class="btn ghost" id="btnMenu">처음으로</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==== 01_util.js ====
+'use strict';
+// ---------- helpers ----------
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = t => t * t * (3 - 2 * t);
+const dist2 = (ax, ay, bx, by) => { const dx = ax - bx, dy = ay - by; return dx * dx + dy * dy; };
+const dist = (ax, ay, bx, by) => Math.sqrt(dist2(ax, ay, bx, by));
+const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const mix = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+function hex(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+// visual-only randomness (particles etc.)
+const rand = (a = 1, b) => (b === undefined ? Math.random() * a : a + Math.random() * (b - a));
+
+// Seeded generator for level layout, so "today's scroll" is the same for everyone.
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  const f = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  f.range = (lo, hi) => lo + f() * (hi - lo);
+  f.int = (lo, hi) => Math.floor(lo + f() * (hi - lo + 1));
+  f.pick = arr => arr[Math.floor(f() * arr.length)];
+  f.chance = p => f() < p;
+  return f;
+}
+function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function todayKey() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+
+// 1D value noise for ridgelines and brush texture
+function makeNoise(seed) {
+  const r = mulberry32(seed), N = 512, v = new Float32Array(N);
+  for (let i = 0; i < N; i++) v[i] = r();
+  return x => { const i = Math.floor(x), f = x - i, a = v[((i % N) + N) % N], b = v[(((i + 1) % N) + N) % N]; return lerp(a, b, smooth(f)); };
+}
+function fbm(n, x, oct = 4) { let s = 0, a = 0.5, f = 1, t = 0; for (let i = 0; i < oct; i++) { s += n(x * f) * a; t += a; a *= 0.5; f *= 2.03; } return s / t; }
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('mukseon.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('mukseon.' + k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } },
+};
+
+// ==== 02_audio.js ====
+// ---------- sound: plucked strings (Karplus–Strong), wind, drum — all synthesized ----------
+// Grabs walk up a pentatonic scale (평조 feel: C D F G A), so a clean climb plays a melody.
+const PENTA = [0, 2, 5, 7, 9];
+const SFX = {
+  ctx: null, out: null, rev: null, on: true, last: {}, plucks: new Map(), noiseBuf: null, wind: null,
+  init() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    try { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; this.ctx = new AC(); } catch (e) { this.ctx = null; return; }
+    const c = this.ctx;
+    const comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 3; comp.connect(c.destination);
+    this.out = c.createGain(); this.out.gain.value = 0.8; this.out.connect(comp);
+    // small synthetic hall: decaying noise impulse response
+    const len = Math.floor(c.sampleRate * 2.2), ir = c.createBuffer(2, len, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2); }
+    const conv = c.createConvolver(); conv.buffer = ir;
+    const wet = c.createGain(); wet.gain.value = 0.32; conv.connect(wet); wet.connect(this.out);
+    this.rev = conv;
+    const nlen = c.sampleRate * 2; this.noiseBuf = c.createBuffer(1, nlen, c.sampleRate);
+    const nd = this.noiseBuf.getChannelData(0); for (let i = 0; i < nlen; i++) nd[i] = Math.random() * 2 - 1;
+    this.startWind();
+  },
+  ok(name, gap) {
+    if (!this.on || !this.ctx || this.ctx.state !== 'running') return false;
+    const t = performance.now(); if (this.last[name] && t - this.last[name] < gap) return false;
+    this.last[name] = t; return true;
+  },
+  // Karplus–Strong string, rendered once per pitch and cached
+  pluckBuf(freq, bright) {
+    const key = Math.round(freq) + ':' + bright;
+    let b = this.plucks.get(key); if (b) return b;
+    const c = this.ctx, sr = c.sampleRate, dur = 2.2, n = Math.floor(sr * dur);
+    b = c.createBuffer(1, n, sr); const d = b.getChannelData(0);
+    const P = Math.max(2, Math.round(sr / freq)), ring = new Float32Array(P);
+    for (let i = 0; i < P; i++) ring[i] = (Math.random() * 2 - 1) * (i < P * bright ? 1 : 0.3);
+    let idx = 0, prev = 0;
+    for (let i = 0; i < n; i++) {
+      const cur = ring[idx], nxt = ring[(idx + 1) % P];
+      const v = 0.996 * 0.5 * (cur + nxt);
+      ring[idx] = v; d[i] = cur * 0.9 + prev * 0.1; prev = cur;
+      idx = (idx + 1) % P;
+    }
+    this.plucks.set(key, b); return b;
+  },
+  pluck(step, vol = 0.22, bend = 0) {
+    const c = this.ctx, t = c.currentTime;
+    const oct = Math.floor(step / 5), deg = ((step % 5) + 5) % 5;
+    const freq = 196 * Math.pow(2, oct + PENTA[deg] / 12); // G3 base
+    const s = c.createBufferSource(); s.buffer = this.pluckBuf(freq, 0.6);
+    if (bend) { s.playbackRate.setValueAtTime(1, t); s.playbackRate.linearRampToValueAtTime(Math.pow(2, bend / 12), t + 0.12); s.playbackRate.linearRampToValueAtTime(1, t + 0.5); } // 농현: string bend
+    const g = c.createGain(); g.gain.value = vol;
+    s.connect(g); g.connect(this.out); g.connect(this.rev);
+    s.start(t);
+  },
+  tone(type, f0, f1, dur, vol, delay = 0, toRev = false) {
+    const c = this.ctx, t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(this.out); if (toRev) g.connect(this.rev); o.start(t); o.stop(t + dur + 0.05);
+  },
+  noise(dur, vol, type, f0, f1, q = 1, delay = 0, attack = 0.005) {
+    const c = this.ctx, t = c.currentTime + delay, s = c.createBufferSource(); s.buffer = this.noiseBuf;
+    const f = c.createBiquadFilter(); f.type = type; f.Q.value = q; f.frequency.setValueAtTime(f0, t); if (f1 !== f0) f.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(this.out); s.start(t, Math.random()); s.stop(t + dur + 0.05);
+  },
+  // --- game events ---
+  grab(step) { if (!this.ok('grab', 40)) return; this.pluck(step, 0.2); this.noise(0.08, 0.05, 'highpass', 3000, 2000, 1); },
+  release(grade) {
+    if (!this.ok('rel', 60)) return;
+    this.noise(0.25, 0.06, 'bandpass', 500, 1800, 2);
+    if (grade >= 2) this.pluck(12 + grade, 0.14, 2);
+  },
+  whoosh(v) { if (!this.ok('whoosh', 200)) return; this.noise(0.4, 0.03 + v * 0.05, 'bandpass', 300, 1200, 1.5, 0, 0.1); },
+  snap() { if (!this.ok('snap', 80)) return; this.noise(0.12, 0.25, 'highpass', 1500, 800, 1); this.tone('triangle', 900, 200, 0.12, 0.06); },
+  creak() { if (!this.ok('creak', 300)) return; this.noise(0.5, 0.08, 'bandpass', 700, 400, 12); },
+  blossom(n) { if (!this.ok('blossom', 50)) return; this.tone('sine', 1320 + (n % 5) * 110, 1320 + (n % 5) * 110, 0.25, 0.04, 0, true); },
+  power() { [0, 2, 4, 5].forEach((s, i) => setTimeout(() => this.on && this.ctx && this.pluck(10 + s, 0.16), i * 70)); },
+  drum(vol = 0.5) { if (!this.ok('drum', 90)) return; this.tone('sine', 120, 45, 0.45, vol); this.noise(0.2, vol * 0.5, 'lowpass', 900, 150, 1); }, // 북
+  hit() { if (!this.ok('hit', 150)) return; this.drum(0.6); this.noise(0.5, 0.2, 'lowpass', 2500, 300, 1); },
+  splash() { this.noise(1.2, 0.35, 'lowpass', 1600, 120, 0.8); this.tone('sine', 90, 30, 1.0, 0.25); },
+  thunder() { if (!this.ok('thunder', 500)) return; this.noise(2.5, 0.4, 'lowpass', 600, 60, 0.7, 0, 0.02); this.noise(0.15, 0.3, 'highpass', 3000, 1500, 1); },
+  crow() { if (!this.ok('crow', 600)) return; this.tone('sawtooth', 620, 380, 0.18, 0.05); this.tone('sawtooth', 600, 360, 0.2, 0.05, 0.22); },
+  milestone() { [0, 2, 4, 7].forEach((s, i) => setTimeout(() => this.on && this.ctx && this.pluck(5 + s, 0.18, i === 3 ? 1 : 0), i * 110)); },
+  startWind() {
+    const c = this.ctx, s = c.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true;
+    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 400; f.Q.value = 0.8;
+    const g = c.createGain(); g.gain.value = 0;
+    s.connect(f); f.connect(g); g.connect(this.out); s.start();
+    this.wind = { f, g };
+  },
+  setWind(speed, playing, storm) {
+    if (!this.wind) return;
+    const t = this.ctx.currentTime, k = clamp(speed / 900, 0, 1);
+    this.wind.g.gain.setTargetAtTime(this.on && playing ? 0.03 + k * 0.1 + (storm ? 0.05 : 0) : 0.0001, t, 0.3);
+    this.wind.f.frequency.setTargetAtTime(300 + k * 900, t, 0.3);
+  },
+};
+
+// ==== 03_gfx.js ====
+// ---------- canvas, scroll geometry, paper & ink primitives ----------
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const W = 400;           // scroll width in world units
+const M = 18;            // world units per metre (the climber is about 1.7 m tall)
+const V = { w: 360, h: 640, dpr: 1, scale: 1, ox: 0, viewH: 640, camY: 0, shakeX: 0, shakeY: 0 };
+
+function resize() {
+  V.dpr = Math.min(window.devicePixelRatio || 1, 2);
+  V.w = Math.max(1, cv.clientWidth || innerWidth); V.h = Math.max(1, cv.clientHeight || innerHeight);
+  cv.width = Math.round(V.w * V.dpr); cv.height = Math.round(V.h * V.dpr);
+  V.scale = Math.min(V.w / W, V.h / 560);
+  V.ox = (V.w - W * V.scale) / 2;
+  V.viewH = V.h / V.scale;
+  BGC.clear();
+}
+
+// ---------- paper ----------
+const Paper = {
+  cv: null, pattern: null,
+  build() {
+    const s = 256, c = document.createElement('canvas'); c.width = c.height = s;
+    const x = c.getContext('2d');
+    x.fillStyle = '#e9e5da'; x.fillRect(0, 0, s, s);
+    const img = x.getImageData(0, 0, s, s), d = img.data;
+    for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - 0.5) * 10; d[i] += n; d[i + 1] += n; d[i + 2] += n * 0.9; }
+    x.putImageData(img, 0, 0);
+    // mulberry fibres of hanji
+    for (let i = 0; i < 140; i++) {
+      x.strokeStyle = `rgba(${Math.random() < 0.5 ? '120,110,90' : '255,255,250'},${rand(0.05, 0.16)})`;
+      x.lineWidth = rand(0.4, 1.1);
+      const px = rand(s), py = rand(s), a = rand(TAU), L = rand(8, 30);
+      x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + Math.cos(a + 0.6) * L * 0.5, py + Math.sin(a + 0.6) * L * 0.5, px + Math.cos(a) * L, py + Math.sin(a) * L); x.stroke();
+    }
+    this.cv = c; this.pattern = null;
+  },
+  get(c) { if (!this.pattern) this.pattern = c.createPattern(this.cv, 'repeat'); return this.pattern; },
+};
+Paper.build();
+
+// ---------- ink splat sprites (several organic variants) ----------
+const Splat = {
+  list: [],
+  build() {
+    for (let v = 0; v < 6; v++) {
+      const s = 128, c = document.createElement('canvas'); c.width = c.height = s;
+      const x = c.getContext('2d'); x.fillStyle = '#000';
+      x.beginPath();
+      const n = 18, r0 = s * 0.22;
+      for (let i = 0; i <= n; i++) { const a = i / n * TAU, r = r0 * (0.75 + Math.random() * 0.5); i ? x.lineTo(s / 2 + Math.cos(a) * r, s / 2 + Math.sin(a) * r) : x.moveTo(s / 2 + Math.cos(a) * r, s / 2 + Math.sin(a) * r); }
+      x.closePath(); x.fill();
+      for (let i = 0; i < 14; i++) { const a = rand(TAU), r = rand(r0 * 1.1, s * 0.48), rr = rand(1, 5); x.beginPath(); x.arc(s / 2 + Math.cos(a) * r, s / 2 + Math.sin(a) * r, rr, 0, TAU); x.fill(); }
+      for (let i = 0; i < 5; i++) { const a = rand(TAU); x.lineWidth = rand(1.5, 4); x.lineCap = 'round'; x.beginPath(); x.moveTo(s / 2 + Math.cos(a) * r0, s / 2 + Math.sin(a) * r0); x.lineTo(s / 2 + Math.cos(a) * rand(r0 * 1.4, s * 0.46), s / 2 + Math.sin(a) * rand(r0 * 1.4, s * 0.46)); x.strokeStyle = '#000'; x.stroke(); }
+      this.list.push(c);
+    }
+    // a red-tinted copy set for seal-coloured splashes
+    this.red = this.list.map(src => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = '#b3261e'; x.fillRect(0, 0, 128, 128); return c; });
+  },
+};
+Splat.build();
+
+// warm glow for lanterns, fireflies, moon
+const Glow = {
+  cache: new Map(),
+  get(col) {
+    const k = col.join(','); let s = this.cache.get(k); if (s) return s;
+    s = document.createElement('canvas'); s.width = s.height = 128; const c = s.getContext('2d');
+    const g = c.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, rgba(col, 1)); g.addColorStop(0.25, rgba(col, 0.45)); g.addColorStop(0.6, rgba(col, 0.1)); g.addColorStop(1, rgba(col, 0));
+    c.fillStyle = g; c.fillRect(0, 0, 128, 128); this.cache.set(k, s); return s;
+  },
+};
+function glow(c, x, y, r, col, a = 1) { if (a <= 0.01) return; c.globalAlpha = a; c.drawImage(Glow.get(col), x - r, y - r, r * 2, r * 2); c.globalAlpha = 1; }
+
+// Tapered brush stroke along a polyline: widths go w0 -> w1, with a dry-brush edge.
+function brush(c, pts, w0, w1, col, alpha = 1, dry = true) {
+  const n = pts.length; if (n < 2) return;
+  const L = [], R = [];
+  for (let i = 0; i < n; i++) {
+    const p = pts[i], q = pts[Math.min(n - 1, i + 1)], o = pts[Math.max(0, i - 1)];
+    let dx = q.x - o.x, dy = q.y - o.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+    const t = i / (n - 1), w = lerp(w0, w1, t) * (0.85 + 0.15 * Math.sin(i * 1.7));
+    L.push({ x: p.x - dy * w / 2, y: p.y + dx * w / 2 }); R.push({ x: p.x + dy * w / 2, y: p.y - dx * w / 2 });
+  }
+  c.globalAlpha = alpha; c.fillStyle = col;
+  c.beginPath(); c.moveTo(L[0].x, L[0].y);
+  for (let i = 1; i < n; i++) c.lineTo(L[i].x, L[i].y);
+  for (let i = n - 1; i >= 0; i--) c.lineTo(R[i].x, R[i].y);
+  c.closePath(); c.fill();
+  if (dry) {
+    // hairline streaks where the brush runs dry (비백)
+    c.strokeStyle = col; c.lineWidth = 0.7; c.globalAlpha = alpha * 0.5;
+    for (let k = -1; k <= 1; k += 2) {
+      c.beginPath();
+      for (let i = 0; i < n; i++) {
+        const t = i / (n - 1), w = lerp(w0, w1, t), p = pts[i], q = pts[Math.min(n - 1, i + 1)], o = pts[Math.max(0, i - 1)];
+        let dx = q.x - o.x, dy = q.y - o.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+        const off = k * (w * 0.5 + 1.2);
+        if ((i * 7 + k * 3) % 5 === 0) { c.moveTo(p.x - dy * off, p.y + dx * off); continue; }
+        c.lineTo(p.x - dy * off, p.y + dx * off);
+      }
+      c.stroke();
+    }
+  }
+  c.globalAlpha = 1;
+}
+
+function splat(c, x, y, r, a = 1, red = false, rot = 0) {
+  const list = red ? Splat.red : Splat.list, s = list[(Math.abs(x * 7 + y * 13) | 0) % list.length];
+  c.save(); c.translate(x, y); c.rotate(rot); c.globalAlpha = a; c.drawImage(s, -r, -r, r * 2, r * 2); c.restore(); c.globalAlpha = 1;
+}
+
+// world -> screen transform (with shake); screen units are CSS px * dpr
+function worldXf(c) {
+  const s = V.scale * V.dpr;
+  c.setTransform(s, 0, 0, s, (V.ox + V.shakeX) * V.dpr, (-V.camY * V.scale + V.shakeY) * V.dpr);
+}
+
+// ==== 04_world.js ====
+// ---------- biomes and level generation ----------
+// Heights in metres (1 m = 10 world units). y grows downward, so climbing means y decreasing.
+const BIOMES = [
+  { id: 0, name: '새벽 송림', en: 'DAWN PINES', from: 0, top: hex('#dfe3e2'), bot: hex('#ece6d8'), ink: hex('#1b1a17'), night: false, flora: 'pine', weather: 'petal', poem: '안개 걷히는 소나무 절벽' },
+  { id: 1, name: '대숲', en: 'BAMBOO GROVE', from: 250, top: hex('#d6dfd3'), bot: hex('#e6e4d6'), ink: hex('#1c211b'), night: false, flora: 'bamboo', weather: 'leaf', poem: '바람에 우는 대나무' },
+  { id: 2, name: '폭포 계곡', en: 'WATERFALL GORGE', from: 700, top: hex('#cfd6d8'), bot: hex('#e2e2dc'), ink: hex('#17191b'), night: false, flora: 'falls', weather: 'mist', poem: '천 길 물줄기 곁으로' },
+  { id: 3, name: '달밤', en: 'MOONLIT NIGHT', from: 1300, top: hex('#232a3d'), bot: hex('#3a3f50'), ink: hex('#0b0d14'), night: true, flora: 'lantern', weather: 'firefly', poem: '등불 하나씩 걸린 밤' },
+  { id: 4, name: '뇌우', en: 'THUNDERSTORM', from: 2000, top: hex('#2b2d31'), bot: hex('#45464a'), ink: hex('#0a0a0b'), night: true, storm: true, flora: 'storm', weather: 'rain', poem: '번개가 산을 가른다' },
+  { id: 5, name: '구름 위', en: 'ABOVE THE CLOUDS', from: 3000, top: hex('#efd9b4'), bot: hex('#f1e8d6'), ink: hex('#2a1d14'), night: false, flora: 'cloud', weather: 'gold', poem: '해 뜨는 봉우리, 끝없는 하늘' },
+];
+function biomeAt(m) { let b = BIOMES[0]; for (const x of BIOMES) if (m >= x.from) b = x; return b; }
+// smooth palette blend over 40 m before each boundary
+function paletteAt(m) {
+  const b = biomeAt(m), n = BIOMES[b.id + 1];
+  let t = 0; if (n) t = smooth(clamp((m - (n.from - 40)) / 40, 0, 1));
+  const p = k => (n ? mix(b[k], n[k], t) : b[k]);
+  return { b, top: p('top'), bot: p('bot'), ink: p('ink'), night: n ? lerp(b.night ? 1 : 0, n.night ? 1 : 0, t) : (b.night ? 1 : 0), storm: (b.storm ? 1 - t : 0) + (n && n.storm ? t : 0) };
+}
+
+const ROPE_R = 300;   // max rope reach
+const Gen = {
+  rng: null, nextY: 0, prevRow: [], rowN: 0, lastPow: 0,
+  reset(seed) {
+    this.rng = mulberry32(seed);
+    this.nextY = -160; this.rowN = 0; this.lastPow = 0;
+    this.prevRow = [{ x: W / 2, y: 40 }];
+  },
+  // keep generating until the world reaches above y
+  ensure(y) { while (this.nextY > y) this.row(); },
+  row() {
+    const r = this.rng, m = -this.nextY / M, d = clamp(m / 3000, 0, 1), bio = biomeAt(m);
+    const gap = lerp(165, 235, d) + r.range(-18, 18);
+    const y = this.nextY;
+    const count = d < 0.15 ? 2 : (r.chance(lerp(0.6, 0.35, d)) ? 2 : 1);
+    const row = [];
+    for (let i = 0; i < count; i++) {
+      let x = count === 1 ? r.range(70, W - 70) : (i === 0 ? r.range(55, W / 2 - 25) : r.range(W / 2 + 25, W - 55));
+      row.push({ x, y: y + r.range(-25, 25) });
+    }
+    // reachability: something in this row must be within 82% of rope reach of the previous row
+    const reach = ROPE_R * 0.82;
+    let best = Infinity, bi = 0, bp = null;
+    for (let i = 0; i < row.length; i++) for (const p of this.prevRow) { const dd = dist(row[i].x, row[i].y, p.x, p.y); if (dd < best) { best = dd; bi = i; bp = p; } }
+    if (best > reach) { const a = row[bi], t = reach / best; a.x = bp.x + (a.x - bp.x) * t; a.y = bp.y + (a.y - bp.y) * t; }
+    for (let i = 0; i < row.length; i++) {
+      const a = row[i];
+      const type = this.pickType(r, d, bio, i === bi);
+      G.anchors.push(makeAnchor(type, a.x, a.y, r));
+    }
+    // blossoms trace a path from the previous row up to the new one
+    if (r.chance(0.65) && bp) {
+      const a = row[bi], n = r.int(3, 5), lift = r.range(30, 70);
+      for (let k = 1; k <= n; k++) {
+        const t = k / (n + 1), x = lerp(bp.x, a.x, t), yy = lerp(bp.y, a.y, t) - Math.sin(t * Math.PI) * lift;
+        G.items.push({ kind: 'blossom', x, y: yy, t: r.range(0, 6), got: false });
+      }
+    }
+    // hazards and power-ups
+    this.hazards(r, d, bio, y, gap, row);
+    if (m - this.lastPow > 200 && r.chance(0.35)) {
+      this.lastPow = m;
+      const kind = r.pick(['charm', 'feather', 'inkstick']);
+      const a = row[r.int(0, row.length - 1)];
+      G.items.push({ kind, x: clamp(a.x + r.range(-60, 60), 40, W - 40), y: a.y - gap * 0.5, t: 0, got: false });
+    }
+    this.prevRow = row;
+    this.nextY -= gap; this.rowN++;
+  },
+  pickType(r, d, bio, critical) {
+    const opts = [{ k: 'knot', w: 5 }];
+    if (bio.id >= 1) opts.push({ k: 'sway', w: 1.5 + d * 2 });
+    if (bio.id >= 1) opts.push({ k: 'fragile', w: critical ? 0.6 + d : 1.2 + d * 2 });
+    // the anchor that guarantees a route never moves far from where reachability was checked
+    if (bio.id >= 2 && !critical) opts.push({ k: 'drift', w: 1 + d * 2 });
+    if (bio.id >= 3 && !critical) opts.push({ k: 'crane', w: 0.8 + d });
+    let s = 0; for (const o of opts) s += o.w; let x = r() * s;
+    for (const o of opts) { x -= o.w; if (x <= 0) return o.k; }
+    return 'knot';
+  },
+  hazards(r, d, bio, y, gap, row) {
+    // crows cross the scroll; a warning mark shows on their entry side first
+    if (bio.id >= 1 && r.chance(0.12 + d * 0.25)) {
+      const dir = r.chance(0.5) ? 1 : -1;
+      G.hazards.push({ kind: 'crow', x: dir > 0 ? -60 : W + 60, y: y - gap * 0.5, baseY: y - gap * 0.5, dir, speed: r.range(110, 150) + d * 90, armed: false, t: r.range(0, 6), dead: false });
+    }
+    // ink spirits orbit an anchor: grab it between passes
+    if (bio.id >= 1 && r.chance(0.1 + d * 0.2)) {
+      const a = G.anchors[G.anchors.length - 1];
+      a.haunted = true;
+      G.hazards.push({ kind: 'spirit', cx: a.x, cy: a.y, a: r.range(0, TAU), R: r.range(70, 86), w: (r.chance(0.5) ? 1 : -1) * r.range(1.6, 2.3), anchor: a, x: a.x, y: a.y, dead: false });
+    }
+    // storm: falling rocks and lightning strikes, both telegraphed
+    if (bio.storm && r.chance(0.3)) G.hazards.push({ kind: 'bolt', x: r.range(60, W - 60), y, w: 46, t: 0, state: 'idle', dead: false });
+    if (bio.id >= 2 && r.chance(0.08 + d * 0.12)) G.hazards.push({ kind: 'rock', x: r.range(50, W - 50), y: y - 900, vy: 0, armed: false, triggerY: y + 200, dead: false, rot: 0 });
+  },
+};
+
+function makeAnchor(type, x, y, r) {
+  const a = { type, x, y, x0: x, y0: y, t: r.range(0, 6), hold: 0, broken: false, used: 0, dir: r.chance(0.5) ? 1 : -1, amp: 0, speed: 0 };
+  if (type === 'sway') { a.amp = r.range(20, 38); a.speed = r.range(1.1, 1.7); }
+  if (type === 'drift') { a.amp = r.range(50, 90); a.speed = r.range(0.45, 0.8); }
+  if (type === 'crane') { a.speed = r.range(70, 110); }
+  return a;
+}
+
+function updateAnchors(dt) {
+  for (const a of G.anchors) {
+    a.t += dt;
+    if (a.type === 'sway') { a.x = a.x0 + Math.sin(a.t * a.speed) * a.amp; a.y = a.y0 + (1 - Math.cos(a.t * a.speed * 2)) * 4; }
+    else if (a.type === 'drift') { a.x = a.x0 + Math.sin(a.t * a.speed) * a.amp; a.y = a.y0 + Math.sin(a.t * a.speed * 1.7) * 10; }
+    else if (a.type === 'crane') {
+      a.x += a.dir * a.speed * dt; a.y = a.y0 + Math.sin(a.t * 3) * 6;
+      if (a.x < 40) { a.x = 40; a.dir = 1; } if (a.x > W - 40) { a.x = W - 40; a.dir = -1; }
+    }
+    a.used = Math.max(0, a.used - dt);
+  }
+}
+
+// ==== 05_bg.js ====
+// ---------- painted background: cached ink-wash chunks with parallax ----------
+const CH = 1000;                       // chunk height in layer space
+const LAYERS = [{ p: 0.28, res: 0.55 }, { p: 0.62, res: 0.85 }];
+const BGC = {
+  map: new Map(), seed: 1,
+  clear() { this.map.clear(); },
+  get(li, idx) {
+    const key = li + ':' + idx;
+    let ch = this.map.get(key);
+    if (!ch) {
+      ch = renderChunk(li, idx, this.seed);
+      this.map.set(key, ch);
+      if (this.map.size > 10) { // drop the farthest chunk
+        let far = null, fd = -1;
+        for (const [k, v] of this.map) { const d = Math.abs(v.idx - idx) + (v.li !== li ? 0.5 : 0); if (d > fd) { fd = d; far = k; } }
+        this.map.delete(far);
+      }
+    }
+    return ch;
+  },
+};
+
+function renderChunk(li, idx, seed) {
+  const L = LAYERS[li], res = L.res * V.scale * Math.min(V.dpr, 1.5);
+  const c = document.createElement('canvas');
+  c.width = Math.ceil(W * res); c.height = Math.ceil(CH * res);
+  const x = c.getContext('2d');
+  x.scale(res, res);
+  const r = mulberry32(hashStr(seed + ':' + li + ':' + idx));
+  const n = makeNoise(hashStr('n' + seed + li + idx));
+  // which height does this chunk show? (layer space -> camera -> metres)
+  const yMid = (idx + 0.5) * CH, m = Math.max(0, -(yMid / L.p) / M);
+  const pal = paletteAt(m), b = pal.b, ink = pal.ink;
+  x.__y0 = idx * CH;
+  // features that cross chunk borders (cliff edges, bamboo stalks) use run-wide noise and absolute y
+  const gn = makeNoise(hashStr('cliff' + seed + li));
+  if (li === 0) drawFar(x, r, n, b, ink, pal);
+  else drawMid(x, r, gn, b, ink, pal, idx, seed);
+  return { cv: c, idx, li };
+}
+
+// --- far: misty peaks (or clouds / a great waterfall) ---
+function drawFar(x, r, n, b, ink, pal) {
+  if (b.flora === 'cloud') { drawClouds(x, r, n, ink, 0.5); return; }
+  const peaks = r.int(2, 3);
+  for (let k = 0; k < peaks; k++) {
+    const H = r.range(200, 400), base = r.range(H * 1.3 + 40, CH - 165), cx = r.range(40, W - 40), w = r.range(90, 170);
+    const alpha = (pal.night > 0.5 ? 0.5 : 0.2) + k * 0.06;
+    const ridge = xx => base - H * Math.exp(-Math.pow((xx - cx) / w, 2)) * (0.75 + 0.5 * fbm(n, xx * 0.02 + k * 9)) - fbm(n, xx * 0.06 + k * 3) * 25;
+    const g = x.createLinearGradient(0, base - H, 0, base + 120);
+    g.addColorStop(0, rgba(ink, alpha)); g.addColorStop(0.55, rgba(ink, alpha * 0.35)); g.addColorStop(1, rgba(ink, 0));
+    x.fillStyle = g;
+    x.beginPath(); x.moveTo(-20, base + 140);
+    for (let xx = -20; xx <= W + 20; xx += 6) x.lineTo(xx, ridge(xx));
+    x.lineTo(W + 20, base + 140); x.closePath(); x.fill();
+    // ridge line in drier ink
+    x.strokeStyle = rgba(ink, alpha * 1.3); x.lineWidth = 1.4;
+    x.beginPath();
+    for (let xx = cx - w * 1.6; xx <= cx + w * 1.6; xx += 5) { const yy = ridge(xx); if (xx === cx - w * 1.6) x.moveTo(xx, yy); else x.lineTo(xx, yy); }
+    x.stroke();
+    // texture dots (미점) on the slopes
+    x.fillStyle = rgba(ink, alpha * 0.9);
+    for (let i = 0; i < 26; i++) { const xx = cx + r.range(-w, w), yy = ridge(xx) + r.range(4, 50); x.beginPath(); x.ellipse(xx, yy, r.range(1.5, 3.5), r.range(0.8, 1.8), 0, 0, TAU); x.fill(); }
+  }
+  if (b.flora === 'falls') {
+    // one waterfall for the whole gorge: same x in every chunk, faded where the gorge begins and ends
+    const fr = mulberry32(hashStr('falls' + BGC.seed));
+    const fx = fr.range(150, 250), L = LAYERS[0];
+    const mAt = yy => Math.max(0, -(yy / L.p) / M);
+    const top = biomeAt(mAt(x.__y0)).flora === 'falls' && biomeAt(mAt(x.__y0 - CH)).flora === 'falls';
+    const bot = biomeAt(mAt(x.__y0 + CH * 1.5)).flora === 'falls';
+    const g = x.createLinearGradient(0, 0, 0, CH);
+    g.addColorStop(0, `rgba(255,255,255,${top ? 0.55 : 0})`); g.addColorStop(0.25, 'rgba(255,255,255,.55)');
+    g.addColorStop(0.75, 'rgba(255,255,255,.55)'); g.addColorStop(1, `rgba(255,255,255,${bot ? 0.55 : 0})`);
+    x.strokeStyle = g;
+    for (let i = 0; i < 18; i++) { x.lineWidth = fr.range(1, 3.5); const xx = fx + fr.range(-24, 24), w1 = fr.range(-6, 6), w2 = fr.range(-6, 6); x.beginPath(); x.moveTo(xx, -2); x.bezierCurveTo(xx + w1, CH * 0.3, xx + w2, CH * 0.7, xx, CH + 2); x.stroke(); }
+  }
+  // mist bands
+  for (let i = 0; i < 3; i++) {
+    const yy = r.range(70, CH - 70), g = x.createLinearGradient(0, yy - 60, 0, yy + 60);
+    const mc = pal.night > 0.5 ? [80, 90, 110] : [250, 250, 245];
+    g.addColorStop(0, rgba(mc, 0)); g.addColorStop(0.5, rgba(mc, pal.night > 0.5 ? 0.25 : 0.55)); g.addColorStop(1, rgba(mc, 0));
+    x.fillStyle = g; x.fillRect(0, yy - 60, W, 120);
+  }
+}
+
+function drawClouds(x, r, n, ink, a) {
+  for (let i = 0; i < 6; i++) {
+    const cx = r.range(0, W), cy = r.range(0, CH), s = r.range(30, 60);
+    x.fillStyle = 'rgba(255,250,240,.75)'; x.strokeStyle = rgba(ink, 0.35); x.lineWidth = 1.2;
+    x.beginPath();
+    for (let k = 0; k < 5; k++) x.arc(cx + (k - 2) * s * 0.7, cy + Math.sin(k * 1.7) * s * 0.15, s * (0.5 + 0.2 * Math.sin(k * 2.3)), Math.PI, 0);
+    x.closePath(); x.fill(); x.stroke();
+    // 운문: the curling cloud motif
+    x.beginPath(); for (let t = 0; t < 4.5 * Math.PI; t += 0.2) { const rr = 2 + t * 1.6; x.lineTo(cx + Math.cos(t) * rr, cy - s * 0.2 + Math.sin(t) * rr * 0.7); } x.stroke();
+  }
+}
+
+// --- mid: cliff walls with pines, bamboo, lanterns ---
+function drawMid(x, r, n, b, ink, pal, idx, seed) {
+  const y0 = idx * CH;
+  if (b.flora === 'cloud') { drawClouds(x, r, n, ink, 0.8); return; }
+  const night = pal.night > 0.5;
+  for (const side of [-1, 1]) {
+    const off = side < 0 ? 0 : 50;
+    const edge = yy => 16 + 30 * fbm(n, (y0 + yy) * 0.004 + off) + 18 * fbm(n, (y0 + yy) * 0.02 + off + 7);
+    const X = (e) => side < 0 ? e : W - e;
+    const g = x.createLinearGradient(side < 0 ? 0 : W, 0, side < 0 ? 70 : W - 70, 0);
+    g.addColorStop(0, rgba(ink, night ? 0.85 : 0.7)); g.addColorStop(1, rgba(ink, night ? 0.35 : 0.18));
+    x.fillStyle = g;
+    x.beginPath(); x.moveTo(X(0), -10);
+    for (let yy = -10; yy <= CH + 10; yy += 10) x.lineTo(X(edge(yy)), yy);
+    x.lineTo(X(0), CH + 10); x.closePath(); x.fill();
+    // axe-cut texture strokes (부벽준)
+    x.strokeStyle = rgba(ink, 0.35); x.lineCap = 'round';
+    for (let i = 0; i < 26; i++) {
+      const yy = r.range(0, CH), e = edge(yy), xx = r.range(2, e - 4);
+      x.lineWidth = r.range(1, 3);
+      x.beginPath(); x.moveTo(X(xx), yy); x.lineTo(X(xx + r.range(4, 12)), yy + r.range(8, 20)); x.stroke();
+    }
+    // flora from the cliff edge
+    if (b.flora === 'pine' || b.flora === 'falls' || b.flora === 'storm') {
+      const count = b.flora === 'storm' ? 2 : 3;
+      for (let i = 0; i < count; i++) {
+        const yy = r.range(60, CH - 60), e = edge(yy);
+        drawPine(x, r, X(e - 2), yy, side, ink, b.flora === 'storm', r.range(0.8, 1.25));
+      }
+    } else if (b.flora === 'bamboo') {
+      // stalk positions are fixed for the whole run, so stalks continue across chunks
+      const sr = mulberry32(hashStr('bamboo' + seed + side));
+      for (let i = 0; i < 4; i++) drawBamboo(x, r, X(sr.range(8, 64)), ink, side, y0, sr.range(55, 80), sr.range(5, 8), sr.range(-0.04, 0.04), sr.range(0.35, 0.8));
+    } else if (b.flora === 'lantern') {
+      for (let i = 0; i < 2; i++) {
+        const yy = r.range(80, CH - 80), e = edge(yy);
+        drawPine(x, r, X(e - 2), yy, side, ink, false, 0.9);
+      }
+    }
+  }
+  if (b.flora === 'lantern') {
+    // strings of lanterns across the gorge, glow baked into the chunk
+    for (let k = 0; k < 2; k++) {
+      const y0 = r.range(100, CH - 100), sag = r.range(30, 60);
+      x.strokeStyle = rgba(ink, 0.6); x.lineWidth = 1;
+      x.beginPath(); x.moveTo(0, y0); x.quadraticCurveTo(W / 2, y0 + sag * 2, W, y0 + r.range(-20, 20)); x.stroke();
+      for (let i = 1; i < 6; i++) {
+        const t = i / 6, lx = t * W, ly = (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * (y0 + sag * 2) + t * t * y0 + 12;
+        x.globalCompositeOperation = 'lighter';
+        glow(x, lx, ly, 34, [255, 170, 80], 0.55);
+        x.globalCompositeOperation = 'source-over';
+        x.fillStyle = '#d9672e'; x.beginPath(); x.ellipse(lx, ly, 5, 7, 0, 0, TAU); x.fill();
+        x.fillStyle = 'rgba(255,220,150,.9)'; x.beginPath(); x.ellipse(lx, ly, 2.5, 4, 0, 0, TAU); x.fill();
+      }
+    }
+  }
+}
+
+function drawPine(x, r, px, py, side, ink, bare, s) {
+  // trunk: a confident curved stroke leaning out over the gorge
+  const dir = -side; // grows inward
+  const len = r.range(70, 130) * s;
+  const p1 = { x: px, y: py }, c1 = { x: px + dir * len * 0.4, y: py - len * 0.1 }, c2 = { x: px + dir * len * 0.6, y: py - len * 0.55 }, p2 = { x: px + dir * len, y: py - len * 0.45 };
+  const pts = [];
+  for (let i = 0; i <= 12; i++) {
+    const t = i / 12, mt = 1 - t;
+    pts.push({ x: mt * mt * mt * p1.x + 3 * mt * mt * t * c1.x + 3 * mt * t * t * c2.x + t * t * t * p2.x, y: mt * mt * mt * p1.y + 3 * mt * mt * t * c1.y + 3 * mt * t * t * c2.y + t * t * t * p2.y });
+  }
+  brush(x, pts, 9 * s, 2.5 * s, rgba(ink), 0.85);
+  // bark knots
+  x.fillStyle = rgba(ink, 0.7);
+  for (let i = 2; i < 10; i += 3) { x.beginPath(); x.ellipse(pts[i].x, pts[i].y, 2.5 * s, 1.4 * s, 0, 0, TAU); x.fill(); }
+  if (bare) {
+    for (let i = 4; i <= 12; i += 3) { const p = pts[i]; brush(x, [p, { x: p.x + dir * r.range(10, 25), y: p.y - r.range(10, 25) }, { x: p.x + dir * r.range(20, 40), y: p.y - r.range(5, 30) }], 2.5, 0.6, rgba(ink), 0.8, false); }
+    return;
+  }
+  // needle clusters: flat umbrella fans, the signature of ink-painted pines
+  for (let i = 5; i <= 12; i += 2) {
+    const p = pts[i], cx = p.x + dir * r.range(-5, 15), cy = p.y - r.range(6, 16), w = r.range(22, 36) * s;
+    x.fillStyle = rgba(ink, 0.22);
+    x.beginPath(); x.ellipse(cx, cy, w, w * 0.32, 0, 0, TAU); x.fill();
+    x.strokeStyle = rgba(ink, 0.75); x.lineWidth = 0.9;
+    x.beginPath();
+    for (let k = 0; k < 16; k++) { const a = Math.PI + (k / 15) * Math.PI; x.moveTo(cx, cy + w * 0.12); x.lineTo(cx + Math.cos(a) * w, cy + Math.sin(a) * w * 0.38); }
+    x.stroke();
+  }
+}
+
+function drawBamboo(x, r, bx, ink, side, y0, segH, w, lean, a) {
+  // segments are laid on an absolute grid so nodes line up across chunk borders
+  const first = Math.floor(y0 / segH) * segH - y0 - segH;
+  for (let y = first; y < CH + segH; y += segH) {
+    const xs = yy => bx + Math.sin((y0 + yy) * 0.002 + lean * 40) * 6;
+    const x0 = xs(y), x1 = xs(y + segH - 5);
+    x.strokeStyle = rgba(ink, a); x.lineWidth = w; x.lineCap = 'butt';
+    x.beginPath(); x.moveTo(x0, y); x.lineTo(x1, y + segH - 5); x.stroke();
+    // node
+    x.lineWidth = 1.6; x.strokeStyle = rgba(ink, Math.min(1, a + 0.2));
+    x.beginPath(); x.moveTo(x1 - w * 0.8, y + segH - 3); x.quadraticCurveTo(x1, y + segH - 6, x1 + w * 0.8, y + segH - 3); x.stroke();
+    // leaves: dagger strokes from nodes
+    if (r.chance(0.45)) {
+      const nx = x1, ny = y + segH - 4, dirx = side < 0 ? 1 : -1;
+      for (let k = 0; k < r.int(2, 4); k++) {
+        const ang = (dirx > 0 ? 0 : Math.PI) + r.range(-0.9, 0.6) * dirx + 0.4;
+        const L = r.range(22, 36);
+        brush(x, [{ x: nx, y: ny }, { x: nx + Math.cos(ang) * L * 0.5, y: ny + Math.sin(ang) * L * 0.5 + 2 }, { x: nx + Math.cos(ang) * L, y: ny + Math.sin(ang) * L + 5 }], 1, 5.5, rgba(ink), a + 0.15, false);
+      }
+    }
+  }
+}
+
+// ---------- per-frame sky + chunk compositing ----------
+function drawBackground(c, pal) {
+  const s = V.scale * V.dpr;
+  // sky wash
+  c.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
+  const g = c.createLinearGradient(0, 0, 0, V.h);
+  g.addColorStop(0, rgba(pal.top)); g.addColorStop(1, rgba(pal.bot));
+  c.fillStyle = g; c.fillRect(V.ox, 0, W * V.scale, V.h);
+  // moon at night, sun disc above the clouds
+  const m = -V.camY / M;
+  if (pal.night > 0.05 && pal.storm < 0.9) {
+    const mx = V.ox + W * V.scale * 0.72, my = V.h * 0.2;
+    c.globalAlpha = pal.night * (1 - pal.storm);
+    c.globalCompositeOperation = 'lighter'; glow(c, mx, my, 120 * V.scale, [200, 210, 230], 0.5); c.globalCompositeOperation = 'source-over';
+    c.fillStyle = '#efe9d6'; c.beginPath(); c.arc(mx, my, 34 * V.scale, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(180,175,160,.35)'; c.beginPath(); c.arc(mx - 9 * V.scale, my - 6 * V.scale, 8 * V.scale, 0, TAU); c.arc(mx + 10 * V.scale, my + 8 * V.scale, 5 * V.scale, 0, TAU); c.fill();
+    c.globalAlpha = 1;
+  }
+  if (pal.b.id === 5 || m > 2950) {
+    const k = clamp((m - 2950) / 50, 0, 1);
+    c.globalAlpha = k;
+    glow(c, V.ox + W * V.scale * 0.3, V.h * 0.25, 170 * V.scale, [240, 170, 110], 0.35 * k);
+    c.fillStyle = '#c8372d'; c.beginPath(); c.arc(V.ox + W * V.scale * 0.3, V.h * 0.25, 30 * V.scale, 0, TAU); c.fill();
+    c.globalAlpha = 1;
+  }
+  // parallax chunks
+  for (let li = 0; li < LAYERS.length; li++) {
+    const L = LAYERS[li], top = V.camY * L.p, bottom = top + V.viewH;
+    const i0 = Math.floor(top / CH), i1 = Math.floor(bottom / CH);
+    for (let i = i0; i <= i1; i++) {
+      const ch = BGC.get(li, i);
+      c.setTransform(s, 0, 0, s, (V.ox + V.shakeX * L.p) * V.dpr, ((i * CH - top) * V.scale + V.shakeY * L.p) * V.dpr);
+      c.drawImage(ch.cv, 0, 0, W, CH);
+    }
+  }
+}
+
+// paper fibres over everything inside the scroll, so ink and sky share one surface
+function drawPaperOverlay(c, pal) {
+  worldXf(c);
+  c.globalCompositeOperation = 'multiply';
+  c.globalAlpha = pal.night > 0.5 ? 0.35 : 0.85;
+  c.fillStyle = Paper.get(c);
+  c.fillRect(0, V.camY - 10, W, V.viewH + 20);
+  c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+}
+
+// silk mounting around the painting when the screen is wider than the scroll
+function drawMounting(c) {
+  c.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
+  const sw = W * V.scale;
+  if (V.ox > 1) {
+    c.fillStyle = '#3b3129'; c.fillRect(0, 0, V.ox, V.h); c.fillRect(V.ox + sw, 0, V.w - V.ox - sw, V.h);
+    c.fillStyle = 'rgba(184,145,62,.18)';
+    for (let y = 0; y < V.h; y += 22) for (let xx = (y / 22) % 2 ? 11 : 0; xx < V.w; xx += 22) { if (xx > V.ox - 4 && xx < V.ox + sw + 4) continue; c.beginPath(); c.arc(xx, y, 2, 0, TAU); c.fill(); }
+    c.fillStyle = '#b8913e'; c.fillRect(V.ox - 4, 0, 2, V.h); c.fillRect(V.ox + sw + 2, 0, 2, V.h);
+  }
+  c.fillStyle = 'rgba(27,26,23,.55)'; c.fillRect(V.ox - 1, 0, 1, V.h); c.fillRect(V.ox + sw, 0, 1, V.h);
+}
+
+// ==== 06_player.js ====
+// ---------- climber, ink rope physics, anchors/hazards/items ----------
+const GRAV = 1650, REEL = 340, LMIN = 44, STEP = 1 / 120;
+const SEAL = hex('#b3261e'), GOLD = hex('#b8913e');
+
+function newPlayer() {
+  const p = { x: W / 2, y: 20, px: W / 2, py: 20, r: 9, rope: null, face: 1, scarf: [], shield: 0, lives: 3, trail: [], feather: 0, flash: 0, lastGrab: null, airT: 0, spin: 0, grabT: 0 };
+  for (let i = 0; i < 9; i++) p.scarf.push({ x: p.x, y: p.y, px: p.x, py: p.y });
+  return p;
+}
+const vel = p => ({ x: (p.x - p.px) / STEP, y: (p.y - p.py) / STEP });
+
+// the anchor the rope would catch right now
+function findTarget(p) {
+  let best = null, bs = -Infinity;
+  for (const a of G.anchors) {
+    if (a.broken || a.used > 0 || a.y > p.y + 70) continue;
+    const d = dist(p.x, p.y, a.x, a.y);
+    if (d > ROPE_R) continue;
+    const s = (p.y - a.y) - Math.abs(a.x - p.x) * 0.35 - (d > ROPE_R * 0.85 ? 40 : 0) - (a.haunted ? 70 : 0);
+    if (s > bs) { bs = s; best = a; }
+  }
+  return best;
+}
+
+function attach(p, a) {
+  p.rope = { a, L: Math.max(LMIN, dist(p.x, p.y, a.x, a.y)), t: 0 };
+  p.grabT = 0;
+  G.grabs++;
+  G.step = (G.step + 1) % 15;
+  SFX.grab(G.step);
+  FX.inkBurst(a.x, a.y, 6, 0.6);
+  FX.ring(a.x, a.y, 4, 22, 0.3);
+}
+function release(p, auto) {
+  const r = p.rope; if (!r) return;
+  r.a.used = 0.35;
+  if (!auto && r.a.type === 'fragile') G.fragileSafe++;
+  p.rope = null;
+  const v = vel(p);
+  let grade = 0;
+  if (!auto) grade = v.y < -1000 ? 3 : v.y < -720 ? 2 : v.y < -450 ? 1 : 0;
+  if (p.feather > 0 && !auto) {
+    // crane feather: an extra upward gust on release
+    const vy = Math.min(v.y, 0) - 520;
+    p.px = p.x - v.x * STEP; p.py = p.y - vy * STEP; p.feather--;
+    updatePows();
+    FX.feathers(p.x, p.y);
+    grade = Math.max(grade, 2);
+  }
+  if (grade >= 1) {
+    G.combo = grade >= 2 ? G.combo + 1 : Math.max(1, G.combo);
+    G.maxCombo = Math.max(G.maxCombo, G.combo);
+    const words = ['', '좋음', '명필', '일필휘지'];
+    FX.word(p.x, p.y - 26, words[grade] + (G.combo > 1 ? ' ×' + G.combo : ''), grade >= 3);
+    if (grade >= 2) { FX.inkBurst(p.x, p.y + 8, 10, 0.9); Seals.unlock('master'); }
+    if (grade >= 3) Seals.unlock('onestroke');
+  } else if (!auto) G.combo = 0;
+  SFX.release(grade);
+  p.spin = v.x * 0.004;
+}
+
+function stepPlayer(p, dt) {
+  // Verlet integration in fixed sub-steps for a stable pendulum
+  let acc = dt;
+  while (acc > 1e-6) {
+    const h = Math.min(STEP, acc); acc -= h;
+    const vx = (p.x - p.px) * 0.9995, vy = (p.y - p.py) * 0.9995;
+    p.px = p.x; p.py = p.y;
+    p.x += vx * (h / STEP) + (p.rope ? 0 : (G.windX || 0) * 0.5 * h * STEP); p.y += vy * (h / STEP) + GRAV * h * STEP;
+    if (p.rope) {
+      const r = p.rope, a = r.a;
+      r.t += h;
+      r.L = Math.max(LMIN, r.L - REEL * h);
+      const dx = p.x - a.x, dy = p.y - a.y, d = Math.hypot(dx, dy) || 1;
+      if (d > r.L) { p.x = a.x + dx / d * r.L; p.y = a.y + dy / d * r.L; }
+    }
+    // scroll edges: cliff faces bounce the climber back
+    const m = 14;
+    if (p.x < m) { const v = p.x - p.px; p.x = m; p.px = p.x + v * 0.45; }
+    if (p.x > W - m) { const v = p.x - p.px; p.x = W - m; p.px = p.x + v * 0.45; }
+    // terminal velocity
+    const fy = p.y - p.py; if (fy > 1400 * STEP) p.py = p.y - 1400 * STEP;
+  }
+}
+
+function updatePlayer(p, dt) {
+  const holding = Input.down;
+  p.flash = Math.max(0, p.flash - dt);
+  if (p.rope) {
+    const a = p.rope.a;
+    p.grabT += dt;
+    if (a.type === 'fragile') {
+      a.hold += dt;
+      if (a.hold > 0.55 && Math.random() < dt * 30) FX.dust(a.x, a.y);
+      if (a.hold > 1.0) { a.broken = true; SFX.snap(); FX.inkBurst(a.x, a.y, 14, 1.2, true); FX.word(a.x, a.y - 16, '뚝', false, true); release(p, true); }
+    }
+    if (p.rope && !holding) release(p, false);
+  } else if (holding) {
+    const t = findTarget(p);
+    if (t) attach(p, t);
+  }
+  G.target = p.rope ? null : findTarget(p);
+  stepPlayer(p, dt);
+  const v = vel(p);
+  if (Math.abs(v.x) > 30) p.face = v.x > 0 ? 1 : -1;
+  if (!p.rope) { p.airT += dt; } else p.airT = 0;
+  // ink trail: a fading brush stroke behind fast flight
+  const sp = Math.hypot(v.x, v.y);
+  if (!p.rope && sp > 380) { p.trail.push({ x: p.x, y: p.y + 2, t: G.t }); if (p.trail.length > 14) p.trail.shift(); }
+  else if (p.trail.length) p.trail.shift();
+  // scarf: a short verlet chain trailing from the neck
+  const nx = p.x - p.face * 2, ny = p.y - 6;
+  p.scarf[0].x = nx; p.scarf[0].y = ny;
+  for (let i = 1; i < p.scarf.length; i++) {
+    const s = p.scarf[i], vx = (s.x - s.px) * 0.9, vy = (s.y - s.py) * 0.9;
+    s.px = s.x; s.py = s.y; s.x += vx + Math.sin(G.t * 6 + i) * 0.25 - (G.windX || 0) * 0.02; s.y += vy + 0.25;
+  }
+  for (let k = 0; k < 2; k++) for (let i = 1; i < p.scarf.length; i++) {
+    const a = p.scarf[i - 1], b = p.scarf[i], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1, L = 4.2;
+    const f = (d - L) / d; b.x -= dx * f; b.y -= dy * f;
+  }
+  // collectibles
+  for (const it of G.items) {
+    if (it.got) continue;
+    it.t += dt;
+    const rr = it.kind === 'blossom' ? 18 : 22;
+    if (dist2(it.x, it.y, p.x, p.y) < rr * rr) collect(it);
+  }
+  // falling into the ink
+  if (p.y > G.inkY - 4) {
+    if (p.shield > 0) {
+      p.shield--; p.py = p.y + 1300 * STEP; p.flash = 0.6; G.inkY += 220;
+      FX.inkBurst(p.x, p.y, 24, 1.6); FX.word(p.x, p.y - 30, '부적이 막았다', true, true); SFX.hit(); FX.shake(10);
+    } else die('ink');
+  }
+}
+
+function collect(it) {
+  it.got = true;
+  const p = G.player;
+  if (it.kind === 'blossom') {
+    G.blossoms++; G.score += 10 * Math.max(1, G.combo);
+    SFX.blossom(G.blossoms);
+    FX.petals(it.x, it.y, 6);
+  } else {
+    SFX.power();
+    FX.ring(it.x, it.y, 6, 40, 0.5, true);
+    if (it.kind === 'charm') { p.shield = Math.min(2, p.shield + 1); FX.word(it.x, it.y - 20, '부적', true, true); }
+    if (it.kind === 'feather') { p.feather = 3; FX.word(it.x, it.y - 20, '학의 깃털 ×3', true, true); }
+    if (it.kind === 'inkstick') { G.inkY += 420; G.inkSlow = 6; FX.word(it.x, it.y - 20, '먹이 물러났다', true, true); }
+    updatePows();
+  }
+}
+
+function segDist(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
+  const t = clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1);
+  return dist(px, py, ax + dx * t, ay + dy * t);
+}
+
+function hitPlayer(src) {
+  const p = G.player;
+  if (p.flash > 0 || G.state !== 'play') return;
+  if (p.shield > 0) {
+    p.shield--; p.flash = 1.0; FX.shake(8); SFX.hit();
+    FX.inkBurst(p.x, p.y, 16, 1.2, true); FX.word(p.x, p.y - 26, '부적이 막았다', true, true);
+    updatePows();
+    return;
+  }
+  p.lives--;
+  updatePows();
+  if (p.lives <= 0) { die(src); return; }
+  // knocked loose: lose the rope, tumble, brief grace period
+  p.flash = 1.4; FX.shake(10); SFX.hit();
+  if (p.rope) release(p, true);
+  p.py = p.y - 250 * STEP; p.px = p.x - (p.x - p.px) * 0.3;
+  FX.inkBurst(p.x, p.y, 16, 1.2, true);
+  FX.word(p.x, p.y - 26, '낙관 하나를 잃었다', false, true);
+  G.combo = 0;
+}
+
+// ---------- hazards ----------
+function updateHazards(dt) {
+  const p = G.player;
+  for (const h of G.hazards) {
+    if (h.dead) continue;
+    if (h.kind === 'crow') {
+      // wait until the climber is near its altitude, then fly across
+      if (!h.armed) { if (Math.abs(p.y - h.baseY) < V.viewH * 0.7) { h.armed = true; h.warnT = 1.0; SFX.crow(); } else continue; }
+      if (h.warnT > 0) { h.warnT -= dt; continue; }
+      h.t += dt; h.x += h.dir * h.speed * dt; h.y = h.baseY + Math.sin(h.t * 3) * 18;
+      if (dist2(h.x, h.y, p.x, p.y) < 18 * 18) hitPlayer('crow');
+      if (h.x < -100 || h.x > W + 100) h.dead = true;
+    } else if (h.kind === 'spirit') {
+      h.a += h.w * dt; h.x = h.anchor.x + Math.cos(h.a) * h.R; h.y = h.anchor.y + Math.sin(h.a) * h.R * 0.85;
+      if (dist2(h.x, h.y, p.x, p.y) < 14 * 14) hitPlayer('spirit');
+      // a spirit crossing the ink line bites through it
+      else if (p.rope && segDist(h.x, h.y, p.x, p.y - 7, p.rope.a.x, p.rope.a.y) < 9) {
+        FX.inkBurst(h.x, h.y, 10, 0.9); FX.word(h.x, h.y - 18, '끊겼다', false, true); SFX.snap();
+        release(p, true);
+      }
+      if (h.anchor.y > G.inkY + 200) h.dead = true;
+    } else if (h.kind === 'bolt') {
+      if (h.state === 'idle' && Math.abs(p.y - h.y) < V.viewH * 0.45) { h.state = 'warn'; h.t = 0; }
+      if (h.state === 'warn') { h.t += dt; if (h.t > 1.1) { h.state = 'strike'; h.t = 0; SFX.thunder(); G.flashT = 0.25; FX.shake(9); if (Math.abs(p.x - h.x) < h.w / 2 + 6 && Math.abs(p.y - h.y) < V.viewH) hitPlayer('bolt'); } }
+      else if (h.state === 'strike') { h.t += dt; if (h.t > 0.35) h.dead = true; }
+    } else if (h.kind === 'rock') {
+      if (!h.armed) { if (p.y < h.triggerY) { h.armed = true; h.y = V.camY - 60; h.warnT = 0.9; } else continue; }
+      if (h.warnT > 0) { h.warnT -= dt; h.y = V.camY - 60; continue; }
+      h.vy += 900 * dt; h.y += h.vy * dt; h.rot += dt * 3;
+      if (dist2(h.x, h.y, p.x, p.y) < 20 * 20) hitPlayer('rock');
+      if (h.y > G.inkY) { h.dead = true; FX.inkBurst(h.x, G.inkY, 8, 0.8); }
+    }
+  }
+}
+
+// ---------- drawing ----------
+function drawAnchors(c, pal) {
+  const night = pal.night > 0.5, ink = rgba(pal.ink);
+  const top = V.camY - 40, bot = V.camY + V.viewH + 40;
+  for (const a of G.anchors) {
+    if (a.y < top || a.y > bot || a.broken) continue;
+    const near = G.target === a;
+    if (a.type === 'crane') { drawCrane(c, a, pal); }
+    else if (night && a.type !== 'fragile') {
+      // a paper lantern hanging from a short cord
+      c.globalCompositeOperation = 'lighter'; glow(c, a.x, a.y + 6, 30, [255, 170, 80], 0.6); c.globalCompositeOperation = 'source-over';
+      c.strokeStyle = 'rgba(30,25,20,.8)'; c.lineWidth = 1; c.beginPath(); c.moveTo(a.x, a.y - 10); c.lineTo(a.x, a.y - 2); c.stroke();
+      c.fillStyle = '#c95a28'; c.beginPath(); c.ellipse(a.x, a.y + 6, 7, 9, 0, 0, TAU); c.fill();
+      c.fillStyle = 'rgba(255,225,160,.95)'; c.beginPath(); c.ellipse(a.x, a.y + 6, 3.5, 6, 0, 0, TAU); c.fill();
+      c.fillStyle = '#1b1a17'; c.fillRect(a.x - 4, a.y - 3, 8, 2); c.fillRect(a.x - 4, a.y + 14, 8, 2);
+    } else if (a.type === 'fragile') {
+      // a cinnabar talisman nailed in place; it shakes as it gives way
+      const sh = a.hold > 0.4 ? Math.sin(G.t * 60) * a.hold * 2.5 : 0;
+      c.save(); c.translate(a.x + sh, a.y); c.rotate(Math.sin(a.t * 2) * 0.08);
+      c.fillStyle = '#e6c46a'; c.fillRect(-7, -4, 14, 24);
+      c.strokeStyle = '#b3261e'; c.lineWidth = 1.6;
+      c.beginPath(); c.moveTo(-3, 0); c.lineTo(3, 4); c.lineTo(-3, 8); c.lineTo(3, 12); c.lineTo(-2, 17); c.stroke();
+      c.fillStyle = '#b3261e'; c.beginPath(); c.arc(0, -2, 3.2, 0, TAU); c.fill();
+      if (a.hold > 0.3) { c.strokeStyle = 'rgba(27,26,23,.8)'; c.lineWidth = 1; c.beginPath(); c.moveTo(-7, 6); c.lineTo(-1, 9); c.lineTo(-4, 14); c.lineTo(2, 18); c.stroke(); }
+      c.restore();
+    } else {
+      // pine knot: a gnarled stub with a ring of paper rope
+      c.fillStyle = ink;
+      c.beginPath(); c.ellipse(a.x, a.y, 6.5, 5, 0.3, 0, TAU); c.fill();
+      brush(c, [{ x: a.x - 3, y: a.y + 2 }, { x: a.x - 14, y: a.y + 10 }, { x: a.x - 22, y: a.y + 12 }], 4, 1, ink, 0.9, false);
+      c.strokeStyle = night ? '#e8dcc0' : '#efe7d4'; c.lineWidth = 1.6;
+      c.beginPath(); c.ellipse(a.x, a.y, 4, 3, 0.3, 0, TAU); c.stroke();
+    }
+    if (near) {
+      // target ring: a red brush circle, open at the top like an ensō
+      const pulse = 1 + Math.sin(G.t * 8) * 0.08;
+      c.strokeStyle = 'rgba(179,38,30,.85)'; c.lineWidth = 2.2;
+      c.beginPath(); c.arc(a.x, a.y, 16 * pulse, -1.2, Math.PI * 1.6); c.stroke();
+    }
+  }
+}
+
+function drawCrane(c, a, pal) {
+  c.save(); c.translate(a.x, a.y); c.scale(a.dir, 1);
+  const flap = Math.sin(a.t * 7);
+  c.fillStyle = '#f4f1e8'; c.strokeStyle = '#1b1a17'; c.lineWidth = 1.2;
+  c.beginPath(); c.ellipse(0, 0, 13, 5, 0, 0, TAU); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(-4, -2); c.quadraticCurveTo(-10, -18 * flap - 4, -26, -14 * flap - 6); c.lineTo(-12, 2); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#1b1a17'; c.beginPath(); c.moveTo(-22, -12 * flap - 5); c.lineTo(-26, -14 * flap - 6); c.lineTo(-18, -9 * flap - 2); c.fill();
+  c.strokeStyle = '#1b1a17'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(11, -1); c.quadraticCurveTo(18, -8, 22, -7); c.stroke();
+  c.fillStyle = '#b3261e'; c.beginPath(); c.arc(21, -8, 2, 0, TAU); c.fill(); // red crown of the red-crowned crane
+  c.strokeStyle = '#1b1a17'; c.lineWidth = 1; c.beginPath(); c.moveTo(-10, 2); c.lineTo(-20, 6); c.moveTo(-10, 3); c.lineTo(-19, 9); c.stroke();
+  c.restore();
+}
+
+function drawRope(c, p, pal) {
+  if (!p.rope) return;
+  const a = p.rope.a, hx = p.x + p.face * 3, hy = p.y - 7;
+  const d = dist(hx, hy, a.x, a.y), slack = Math.max(0, p.rope.L - d), n = 10, pts = [];
+  // brief throw animation, then a taut (or slightly sagging) ink line
+  const k = Math.min(1, p.rope.t / 0.06);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n * k;
+    pts.push({ x: lerp(hx, a.x, t), y: lerp(hy, a.y, t) + Math.sin(t * Math.PI) * slack * 0.5 });
+  }
+  brush(c, pts, 3.2, 1.4, rgba(pal.night > 0.5 ? [20, 18, 16] : pal.ink), 0.95);
+}
+
+function drawPlayer(c, p, pal) {
+  const v = vel(p), night = pal.night > 0.5;
+  const inkC = night ? '#0d0c0b' : rgba(pal.ink);
+  // moonlit halo so the figure reads against a dark sky
+  if (night) { c.globalCompositeOperation = 'lighter'; glow(c, p.x, p.y - 3, 34, [150, 150, 140], 0.55); c.globalCompositeOperation = 'source-over'; }
+  if (p.flash > 0 && Math.floor(G.t * 18) % 2 === 0) c.globalAlpha = 0.45;
+  if (p.trail.length > 2) brush(c, p.trail, 0.5, 7, night ? 'rgba(10,10,12,1)' : rgba(pal.ink), night ? 0.5 : 0.28, true);
+  // scarf
+  brush(c, p.scarf, 4.5, 1.5, '#b3261e', 0.95, false);
+  c.save(); c.translate(p.x, p.y);
+  const lean = p.rope ? Math.atan2(p.rope.a.x - p.x, -(p.rope.a.y - p.y)) * 0.6 : clamp(v.x * 0.0012, -0.6, 0.6) + p.spin * Math.min(1, p.airT * 3);
+  c.rotate(lean);
+  // robe: a single wet stroke
+  c.fillStyle = inkC;
+  c.beginPath(); c.moveTo(-6, -4); c.quadraticCurveTo(-9, 6, -7, 11); c.lineTo(7, 11); c.quadraticCurveTo(9, 4, 6, -4); c.closePath(); c.fill();
+  if (night) { c.strokeStyle = 'rgba(230,222,200,.75)'; c.lineWidth = 1; c.stroke(); }
+  // legs tucked or trailing
+  c.strokeStyle = inkC; c.lineWidth = 2.6; c.lineCap = 'round';
+  const tuck = p.rope ? 0 : clamp(-v.y / 900, -0.3, 1);
+  c.beginPath(); c.moveTo(-3, 10); c.lineTo(-4 - tuck * 3, 16 - tuck * 4); c.moveTo(3, 10); c.lineTo(5 + tuck * 2, 16 - tuck * 5); c.stroke();
+  // head and gat (horsehair hat)
+  c.fillStyle = night ? '#e2d6bd' : '#efe7d4';
+  c.beginPath(); c.arc(0, -9, 4.6, 0, TAU); c.fill();
+  c.strokeStyle = inkC; c.lineWidth = 1.1; c.stroke();
+  c.fillStyle = inkC;
+  c.beginPath(); c.ellipse(0, -13.5, 9.5, 1.8, 0, 0, TAU); c.fill();
+  c.fillRect(-3.4, -19, 6.8, 5.5);
+  // arm reaching to the rope
+  c.restore();
+  if (p.rope) {
+    c.strokeStyle = inkC; c.lineWidth = 2.2;
+    c.beginPath(); c.moveTo(p.x, p.y - 2); c.lineTo(p.x + p.face * 3, p.y - 7); c.stroke();
+  }
+  c.globalAlpha = 1;
+  if (p.shield > 0) {
+    c.strokeStyle = 'rgba(184,145,62,.7)'; c.lineWidth = 1.5;
+    for (let i = 0; i < p.shield; i++) { c.beginPath(); c.arc(p.x, p.y - 2, 19 + i * 5, G.t * 2 + i, G.t * 2 + i + Math.PI * 1.4); c.stroke(); }
+  }
+}
+
+function drawHazards(c, pal) {
+  const ink = rgba(pal.ink);
+  for (const h of G.hazards) {
+    if (h.dead) continue;
+    if (h.kind === 'crow') {
+      if (!h.armed) continue;
+      if (h.warnT > 0) {
+        // warning: a red brush "!" at the entry edge
+        const ex = h.dir > 0 ? 18 : W - 18, ey = clamp(h.baseY, V.camY + 60, V.camY + V.viewH - 60);
+        c.globalAlpha = 0.5 + 0.5 * Math.sin(G.t * 20);
+        c.fillStyle = '#b3261e'; c.font = '700 26px "Nanum Brush Script", serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText('!', ex, ey);
+        c.globalAlpha = 1;
+        continue;
+      }
+      c.save(); c.translate(h.x, h.y); c.scale(h.dir, 1);
+      const f = Math.sin(h.t * 14);
+      c.fillStyle = pal.night > 0.5 ? '#050505' : ink;
+      c.beginPath(); c.ellipse(0, 0, 10, 4.5, 0, 0, TAU); c.fill();
+      c.beginPath(); c.moveTo(-2, -1); c.quadraticCurveTo(-6, -14 * f, -16, -12 * f); c.lineTo(-6, 2); c.fill();
+      c.beginPath(); c.moveTo(9, -2); c.lineTo(15, 0); c.lineTo(9, 1); c.fill();
+      c.beginPath(); c.moveTo(-9, 0); c.lineTo(-16, -3); c.lineTo(-15, 3); c.fill();
+      c.fillStyle = '#d9b44a'; c.beginPath(); c.arc(6, -1.5, 1, 0, TAU); c.fill();
+      c.restore();
+    } else if (h.kind === 'spirit') {
+      // ink wisp with a tail
+      c.globalAlpha = 0.85;
+      splat(c, h.x, h.y, 13, 0.9, false, G.t * 2);
+      c.fillStyle = '#efe7d4'; c.beginPath(); c.arc(h.x - 3, h.y - 2, 1.8, 0, TAU); c.arc(h.x + 3, h.y - 2, 1.8, 0, TAU); c.fill();
+      c.globalAlpha = 1;
+      c.strokeStyle = rgba(pal.ink, 0.2); c.lineWidth = 1; c.setLineDash([3, 5]);
+      c.beginPath(); c.ellipse(h.anchor.x, h.anchor.y, h.R, h.R * 0.85, 0, 0, TAU); c.stroke(); c.setLineDash([]);
+    } else if (h.kind === 'bolt') {
+      const top = V.camY - 20, bot = V.camY + V.viewH + 20;
+      if (h.state === 'warn') {
+        c.fillStyle = `rgba(179,38,30,${0.08 + 0.12 * (h.t / 1.1)})`; c.fillRect(h.x - h.w / 2, top, h.w, bot - top);
+        c.strokeStyle = `rgba(179,38,30,${0.3 + 0.4 * Math.sin(G.t * 25) ** 2})`; c.lineWidth = 1.5; c.setLineDash([6, 6]);
+        c.strokeRect(h.x - h.w / 2, top, h.w, bot - top); c.setLineDash([]);
+      } else if (h.state === 'strike') {
+        const pts = []; let x = h.x;
+        for (let y = top; y <= bot; y += 30) { x = h.x + rand(-12, 12); pts.push({ x, y }); }
+        c.globalCompositeOperation = 'lighter';
+        brush(c, pts, 9, 4, 'rgba(255,250,230,1)', 1 - h.t / 0.35, false);
+        c.globalCompositeOperation = 'source-over';
+        brush(c, pts, 3, 1.5, '#1b1a17', 1 - h.t / 0.35, false);
+      }
+    } else if (h.kind === 'rock') {
+      if (!h.armed) continue;
+      if (h.warnT > 0) {
+        c.fillStyle = `rgba(179,38,30,${0.5 + 0.5 * Math.sin(G.t * 20)})`;
+        c.beginPath(); c.moveTo(h.x, V.camY + 34); c.lineTo(h.x - 8, V.camY + 18); c.lineTo(h.x + 8, V.camY + 18); c.closePath(); c.fill();
+        continue;
+      }
+      c.save(); c.translate(h.x, h.y); c.rotate(h.rot);
+      c.fillStyle = ink; c.beginPath();
+      for (let i = 0; i < 7; i++) { const a = i / 7 * TAU, rr = 14 + Math.sin(i * 2.7) * 4; i ? c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : c.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+      c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(239,231,212,.5)'; c.lineWidth = 1; c.beginPath(); c.moveTo(-6, -4); c.lineTo(4, -8); c.stroke();
+      c.restore();
+    }
+  }
+}
+
+function drawItems(c, pal) {
+  const top = V.camY - 30, bot = V.camY + V.viewH + 30;
+  for (const it of G.items) {
+    if (it.got || it.y < top || it.y > bot) continue;
+    const bob = Math.sin(it.t * 2.5) * 3;
+    if (it.kind === 'blossom') {
+      // five-petal plum blossom
+      c.save(); c.translate(it.x, it.y + bob); c.rotate(it.t * 0.6);
+      c.fillStyle = pal.night > 0.5 ? '#f3d6dc' : '#e8a3b0';
+      for (let i = 0; i < 5; i++) { const a = i / 5 * TAU; c.beginPath(); c.arc(Math.cos(a) * 4.2, Math.sin(a) * 4.2, 3.6, 0, TAU); c.fill(); }
+      c.fillStyle = '#b3261e'; c.beginPath(); c.arc(0, 0, 1.8, 0, TAU); c.fill();
+      c.restore();
+    } else {
+      c.save(); c.translate(it.x, it.y + bob);
+      c.globalCompositeOperation = pal.night > 0.5 ? 'lighter' : 'source-over';
+      glow(c, 0, 0, 30, pal.night > 0.5 ? [220, 180, 90] : [255, 240, 200], pal.night > 0.5 ? 0.5 : 0.8);
+      c.globalCompositeOperation = 'source-over';
+      if (it.kind === 'charm') {
+        c.rotate(Math.sin(it.t * 2) * 0.15);
+        c.fillStyle = '#e6c46a'; c.fillRect(-7, -11, 14, 22);
+        c.strokeStyle = '#b3261e'; c.lineWidth = 1.5; c.strokeRect(-5, -9, 10, 18);
+        c.fillStyle = '#b3261e'; c.font = '700 11px "Gowun Batang", serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('符', 0, 0);
+      } else if (it.kind === 'feather') {
+        c.rotate(-0.6 + Math.sin(it.t * 2) * 0.2);
+        c.fillStyle = '#f7f4ec'; c.strokeStyle = '#1b1a17'; c.lineWidth = 1;
+        c.beginPath(); c.moveTo(0, 12); c.quadraticCurveTo(-8, 0, 0, -13); c.quadraticCurveTo(8, 0, 0, 12); c.fill(); c.stroke();
+        c.beginPath(); c.moveTo(0, 12); c.lineTo(0, -12); c.stroke();
+        c.fillStyle = '#1b1a17'; c.beginPath(); c.moveTo(0, -13); c.quadraticCurveTo(4, -9, 3, -6); c.lineTo(0, -8); c.fill();
+      } else if (it.kind === 'inkstick') {
+        c.rotate(0.4);
+        c.fillStyle = '#1b1a17'; c.fillRect(-4, -12, 8, 24);
+        c.fillStyle = '#b8913e'; c.fillRect(-3, -8, 6, 1.4); c.fillRect(-3, 6, 6, 1.4);
+        c.fillStyle = '#b8913e'; c.font = '700 8px "Gowun Batang", serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('墨', 0, -1);
+      }
+      c.restore();
+    }
+  }
+}
+
+function drawInk(c, pal) {
+  const y0 = G.inkY, t = G.t;
+  if (y0 > V.camY + V.viewH + 60) return;
+  const surf = x => y0 + Math.sin(x * 0.03 + t * 2) * 6 + Math.sin(x * 0.071 - t * 2.7) * 3.5 + Math.sin(x * 0.013 + t * 0.7) * 5;
+  // wisps rising from the surface
+  c.strokeStyle = 'rgba(10,9,8,.18)'; c.lineWidth = 6; c.lineCap = 'round';
+  for (let i = 0; i < 7; i++) {
+    const x = ((i * 61 + t * 12) % (W + 40)) - 20, h = 40 + 30 * Math.sin(t + i);
+    c.beginPath(); c.moveTo(x, surf(x)); c.quadraticCurveTo(x + Math.sin(t * 1.3 + i) * 14, surf(x) - h * 0.5, x + Math.sin(t + i) * 8, surf(x) - h); c.stroke();
+  }
+  const g = c.createLinearGradient(0, y0 - 10, 0, y0 + 300);
+  g.addColorStop(0, '#0b0a09'); g.addColorStop(0.08, '#141210'); g.addColorStop(1, '#050404');
+  c.fillStyle = g;
+  c.beginPath(); c.moveTo(-10, V.camY + V.viewH + 400);
+  for (let x = -10; x <= W + 10; x += 8) c.lineTo(x, surf(x));
+  c.lineTo(W + 10, V.camY + V.viewH + 400); c.closePath(); c.fill();
+  // sheen on the surface
+  c.strokeStyle = pal.night > 0.5 ? 'rgba(200,210,230,.25)' : 'rgba(255,255,255,.18)'; c.lineWidth = 1.2;
+  c.beginPath(); for (let x = -10; x <= W + 10; x += 8) { const y = surf(x) + 3; x === -10 ? c.moveTo(x, y) : c.lineTo(x, y); } c.stroke();
+}
+
+// ==== 075_seals.js ====
+// ---------- 낙관첩: collectible seal stamps (achievements), scroll-unroll intro ----------
+const SEALS = [
+  { id: 'first', han: '初線', name: '첫 먹줄', how: '매듭에 처음 먹줄을 겁니다' },
+  { id: 'bamboo', han: '竹林', name: '대숲에 들다', how: '250 m에 오릅니다' },
+  { id: 'falls', han: '瀑布', name: '폭포를 지나', how: '700 m에 오릅니다' },
+  { id: 'moon', han: '明月', name: '달을 보다', how: '1,300 m에 오릅니다' },
+  { id: 'storm', han: '雷雨', name: '번개 속으로', how: '2,000 m에 오릅니다' },
+  { id: 'clouds', han: '雲上', name: '구름 위에 서다', how: '3,000 m에 오릅니다' },
+  { id: 'master', han: '名筆', name: '명필', how: '명필 판정을 받습니다' },
+  { id: 'onestroke', han: '一筆', name: '일필휘지', how: '일필휘지 판정을 받습니다' },
+  { id: 'five', han: '五連', name: '다섯 획', how: '명필 이상을 5번 연속으로 냅니다' },
+  { id: 'plum', han: '百梅', name: '매화 백 송이', how: '한 번에 매화 100송이를 모읍니다' },
+  { id: 'talisman', han: '符籍', name: '부적 다루기', how: '붉은 매듭을 끊기 전에 20번 놓습니다' },
+  { id: 'daily', han: '今日', name: '오늘의 족자', how: '오늘의 족자를 한 번 오릅니다' },
+];
+const Seals = {
+  got: new Set(store.get('seals', [])),
+  unlock(id) {
+    if (!G || G.demo || this.got.has(id)) return;
+    this.got.add(id); store.set('seals', [...this.got]);
+    const s = SEALS.find(x => x.id === id);
+    G.newSeals.push(s.name);
+    const p = G.player;
+    FX.word(p.x, p.y - 52, '낙관 · ' + s.name, true, true);
+    SFX.power();
+  },
+  check() {
+    const m = G.maxH;
+    if (G.grabs >= 1) this.unlock('first');
+    if (m >= 250) this.unlock('bamboo');
+    if (m >= 700) this.unlock('falls');
+    if (m >= 1300) this.unlock('moon');
+    if (m >= 2000) this.unlock('storm');
+    if (m >= 3000) this.unlock('clouds');
+    if (G.blossoms >= 100) this.unlock('plum');
+    if (G.combo >= 5) this.unlock('five');
+    if (G.fragileSafe >= 20) this.unlock('talisman');
+  },
+};
+
+// carved seal (白文印: the characters are cut away so paper shows through)
+function drawSeal(cnv, s, owned) {
+  const c = cnv.getContext('2d'), S = cnv.width;
+  c.clearRect(0, 0, S, S);
+  const r = mulberry32(hashStr(s.id));
+  c.save(); c.translate(S / 2, S / 2); c.rotate((r() - 0.5) * 0.12);
+  const w = S * 0.8;
+  if (owned) {
+    c.fillStyle = '#b3261e';
+    c.beginPath(); c.roundRect ? c.roundRect(-w / 2, -w / 2, w, w, S * 0.06) : c.rect(-w / 2, -w / 2, w, w); c.fill();
+    c.globalCompositeOperation = 'destination-out';
+    c.fillStyle = '#000'; c.font = `700 ${S * 0.3}px "Gowun Batang", serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    // two characters stacked right-to-left like a real seal: here side by side vertically
+    c.fillText(s.han[0], w * 0.2, -w * 0.18); c.fillText(s.han[1], w * 0.2, w * 0.2);
+    c.font = `700 ${S * 0.16}px "Gowun Batang", serif`;
+    c.fillText('印', -w * 0.22, 0);
+    // worn edges: small chips knocked out of the stone
+    for (let i = 0; i < 26; i++) { const a = r() * TAU, rr = w * (0.36 + r() * 0.18); c.beginPath(); c.arc(Math.cos(a) * rr, Math.sin(a) * rr, r() * S * 0.025 + 0.5, 0, TAU); c.fill(); }
+    c.fillRect(-w * 0.04, -w * 0.4, w * 0.012, w * 0.8);
+    c.globalCompositeOperation = 'source-over';
+  } else {
+    c.strokeStyle = 'rgba(27,26,23,.35)'; c.lineWidth = 1.5; c.setLineDash([4, 4]);
+    c.strokeRect(-w / 2, -w / 2, w, w); c.setLineDash([]);
+    c.fillStyle = 'rgba(27,26,23,.25)'; c.font = `700 ${S * 0.3}px "Gowun Batang", serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('?', 0, 0);
+  }
+  c.restore();
+}
+
+function openSeals() {
+  const grid = $('sealGrid'); grid.innerHTML = '';
+  for (const s of SEALS) {
+    const own = Seals.got.has(s.id);
+    const d = document.createElement('div'); d.className = 'seal' + (own ? '' : ' locked');
+    const cnv = document.createElement('canvas'); cnv.width = cnv.height = 120;
+    d.appendChild(cnv);
+    const t = document.createElement('div'); t.innerHTML = `<b>${s.name}</b><span>${s.how}</span>`;
+    d.appendChild(t); grid.appendChild(d);
+    drawSeal(cnv, s, own);
+  }
+  $('sealCount').textContent = `${Seals.got.size} / ${SEALS.length}`;
+  showScreen('scrSeals');
+}
+
+// a wooden roller sweeps up as the scroll opens
+function drawUnroll(c) {
+  const k = clamp(G.t / 0.9, 0, 1);
+  if (k >= 1 || G.demo) return;
+  const e = 1 - Math.pow(1 - k, 3);
+  const sw = W * V.scale, edge = V.h * (1 - e);
+  c.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
+  c.fillStyle = '#2a2622'; c.fillRect(V.ox - 6, 0, sw + 12, edge);
+  const g = c.createLinearGradient(0, edge - 10, 0, edge + 14);
+  g.addColorStop(0, '#3d2a1c'); g.addColorStop(0.45, '#8a6440'); g.addColorStop(1, '#2e1f14');
+  c.fillStyle = g; c.fillRect(V.ox - 14, edge - 10, sw + 28, 24);
+  c.fillStyle = '#b8913e'; c.fillRect(V.ox - 22, edge - 7, 10, 18); c.fillRect(V.ox + sw + 12, edge - 7, 10, 18);
+}
+
+// ==== 07_fx.js ====
+// ---------- particles, brush words, weather ----------
+const FX = {
+  ps: [], words: [], shakeAmt: 0, shakeOn: store.get('shake', true), weather: [],
+  init() { this.ps.length = 0; this.words.length = 0; this.shakeAmt = 0; this.weather.length = 0; },
+  add(o) { if (this.ps.length > 420) this.ps.shift(); this.ps.push(o); return o; },
+  inkBurst(x, y, n, s = 1, red = false) {
+    for (let i = 0; i < n; i++) {
+      const a = rand(TAU), v = rand(60, 260) * s;
+      this.add({ k: 'drop', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, r: rand(1.5, 4.5) * s, life: rand(0.5, 1.0), max: 1, red, g: 700 });
+    }
+    this.add({ k: 'splat', x, y, r: 10 * s + rand(4), life: 0.9, max: 0.9, red, rot: rand(TAU) });
+  },
+  ring(x, y, r0, r1, life, gold = false) { this.add({ k: 'ring', x, y, r0, r1, life, max: life, gold }); },
+  petals(x, y, n) { for (let i = 0; i < n; i++) this.add({ k: 'petal', x, y, vx: rand(-80, 80), vy: rand(-120, -20), r: rand(2.5, 4), life: rand(0.8, 1.4), max: 1.4, rot: rand(TAU), vr: rand(-8, 8), g: 120 }); },
+  feathers(x, y) { for (let i = 0; i < 4; i++) this.add({ k: 'feather', x, y, vx: rand(-60, 60), vy: rand(20, 80), r: 6, life: 1.4, max: 1.4, rot: rand(TAU), vr: rand(-4, 4), g: 40 }); },
+  dust(x, y) { this.add({ k: 'drop', x: x + rand(-6, 6), y: y + rand(0, 10), vx: rand(-20, 20), vy: rand(0, 40), r: rand(0.8, 1.6), life: 0.6, max: 0.6, g: 400, gold: true }); },
+  word(x, y, s, big = false, red = false) { this.words.push({ x, y, s, big, red, t: 0 }); if (this.words.length > 8) this.words.shift(); },
+  shake(a) { if (this.shakeOn) this.shakeAmt = Math.max(this.shakeAmt, a); },
+  update(dt) {
+    for (let i = this.ps.length - 1; i >= 0; i--) {
+      const p = this.ps[i]; p.life -= dt;
+      if (p.life <= 0) { this.ps.splice(i, 1); continue; }
+      if (p.vx !== undefined) { p.vy += (p.g || 0) * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= Math.exp(-1.5 * dt); }
+      if (p.vr) p.rot += p.vr * dt;
+    }
+    for (let i = this.words.length - 1; i >= 0; i--) { const w = this.words[i]; w.t += dt; w.y -= 22 * dt; if (w.t > 1.1) this.words.splice(i, 1); }
+    this.shakeAmt = Math.max(0, this.shakeAmt - 40 * dt);
+    V.shakeX = this.shakeAmt ? rand(-1, 1) * this.shakeAmt : 0; V.shakeY = this.shakeAmt ? rand(-1, 1) * this.shakeAmt : 0;
+  },
+  draw(c, pal) {
+    const inkCol = pal.night > 0.5 ? '#0b0a09' : rgba(pal.ink);
+    for (const p of this.ps) {
+      const k = clamp(p.life / p.max, 0, 1);
+      if (p.k === 'drop') { c.globalAlpha = Math.min(1, k * 1.5); c.fillStyle = p.gold ? '#b8913e' : p.red ? '#b3261e' : inkCol; c.beginPath(); c.arc(p.x, p.y, p.r, 0, TAU); c.fill(); }
+      else if (p.k === 'splat') { splat(c, p.x, p.y, p.r * (1.4 - k * 0.4), k * 0.55, p.red, p.rot); }
+      else if (p.k === 'ring') { c.globalAlpha = k; c.strokeStyle = p.gold ? '#b8913e' : inkCol; c.lineWidth = 2 * k + 0.5; c.beginPath(); c.arc(p.x, p.y, lerp(p.r1, p.r0, k), 0, TAU); c.stroke(); }
+      else if (p.k === 'petal') { c.globalAlpha = Math.min(1, k * 2); c.fillStyle = '#e8a3b0'; c.save(); c.translate(p.x, p.y); c.rotate(p.rot); c.beginPath(); c.ellipse(0, 0, p.r, p.r * 0.55, 0, 0, TAU); c.fill(); c.restore(); }
+      else if (p.k === 'feather') { c.globalAlpha = k; c.save(); c.translate(p.x, p.y); c.rotate(p.rot); c.fillStyle = '#f7f4ec'; c.strokeStyle = '#1b1a17'; c.lineWidth = 0.8; c.beginPath(); c.ellipse(0, 0, 2.5, 7, 0, 0, TAU); c.fill(); c.stroke(); c.restore(); }
+    }
+    c.globalAlpha = 1;
+  },
+  drawWords(c, pal) {
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    for (const w of this.words) {
+      const a = w.t < 0.1 ? w.t / 0.1 : clamp(1 - (w.t - 0.6) / 0.5, 0, 1);
+      const sc = w.t < 0.12 ? 1.5 - w.t * 4 : 1;
+      c.globalAlpha = a;
+      c.font = `${(w.big ? 34 : 24) * sc}px "Nanum Brush Script", serif`;
+      c.lineWidth = 4; c.strokeStyle = pal.night > 0.5 ? 'rgba(20,24,36,.85)' : 'rgba(239,231,212,.9)';
+      c.strokeText(w.s, w.x, w.y);
+      c.fillStyle = w.red ? '#b3261e' : (pal.night > 0.5 ? '#f1ecdf' : '#1b1a17');
+      c.fillText(w.s, w.x, w.y);
+    }
+    c.globalAlpha = 1;
+  },
+  // screen-space weather tied to the biome
+  updateWeather(dt, pal) {
+    const b = pal.b, want = b.weather === 'rain' ? 90 : b.weather === 'mist' ? 8 : 34;
+    while (this.weather.length < want) this.weather.push(this.spawnW(b.weather, true));
+    if (this.weather.length > want) this.weather.length = want;
+    for (let i = 0; i < this.weather.length; i++) {
+      const w = this.weather[i];
+      if (w.type !== b.weather) { this.weather[i] = this.spawnW(b.weather, false); continue; }
+      w.x += w.vx * dt + (G.windX || 0) * dt * 0.3; w.y += w.vy * dt; w.rot += w.vr * dt; w.t += dt;
+      if (w.y > 1.1 || w.y < -0.1 || w.x < -0.15 || w.x > 1.15) this.weather[i] = this.spawnW(b.weather, false);
+    }
+  },
+  spawnW(type, anywhere) {
+    const w = { type, x: rand(), y: anywhere ? rand() : -0.05, vx: 0, vy: 0, rot: rand(TAU), vr: rand(-2, 2), s: rand(0.6, 1.3), t: rand(10) };
+    if (type === 'petal') { w.vx = rand(0.01, 0.05); w.vy = rand(0.04, 0.08); }
+    else if (type === 'leaf') { w.vx = rand(-0.03, 0.06); w.vy = rand(0.05, 0.09); }
+    else if (type === 'mist') { w.vx = rand(0.01, 0.03) * (Math.random() < 0.5 ? 1 : -1); w.vy = 0; w.y = rand(); w.x = anywhere ? rand() : (w.vx > 0 ? -0.1 : 1.1); }
+    else if (type === 'firefly') { w.vx = rand(-0.02, 0.02); w.vy = rand(-0.03, 0.01); if (!anywhere) w.y = 1.05; }
+    else if (type === 'rain') { w.vx = -0.25; w.vy = rand(1.4, 1.9); }
+    else if (type === 'gold') { w.vx = rand(-0.01, 0.01); w.vy = rand(-0.05, -0.02); if (!anywhere) w.y = 1.05; }
+    return w;
+  },
+  drawWeather(c, pal) {
+    c.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
+    const sw = W * V.scale, ox = V.ox, h = V.h;
+    c.save(); c.beginPath(); c.rect(ox, 0, sw, h); c.clip();
+    for (const w of this.weather) {
+      const x = ox + w.x * sw, y = w.y * h;
+      if (w.type === 'petal') { c.fillStyle = 'rgba(232,163,176,.85)'; c.save(); c.translate(x, y); c.rotate(w.rot); c.beginPath(); c.ellipse(0, 0, 3.4 * w.s, 2 * w.s, 0, 0, TAU); c.fill(); c.restore(); }
+      else if (w.type === 'leaf') { c.fillStyle = rgba(pal.ink, 0.55); c.save(); c.translate(x, y); c.rotate(w.rot); c.beginPath(); c.moveTo(-7 * w.s, 0); c.quadraticCurveTo(0, -2.4 * w.s, 7 * w.s, 0); c.quadraticCurveTo(0, 2.4 * w.s, -7 * w.s, 0); c.fill(); c.restore(); }
+      else if (w.type === 'mist') { const g = c.createRadialGradient(x, y, 0, x, y, 140 * w.s); g.addColorStop(0, 'rgba(250,250,246,.35)'); g.addColorStop(1, 'rgba(250,250,246,0)'); c.fillStyle = g; c.fillRect(x - 140 * w.s, y - 140 * w.s, 280 * w.s, 280 * w.s); }
+      else if (w.type === 'firefly') { c.globalCompositeOperation = 'lighter'; glow(c, x, y, 8 * w.s, [200, 255, 150], 0.5 + 0.5 * Math.sin(w.t * 3)); c.globalCompositeOperation = 'source-over'; }
+      else if (w.type === 'rain') { c.strokeStyle = 'rgba(200,205,215,.35)'; c.lineWidth = 1; c.beginPath(); c.moveTo(x, y); c.lineTo(x - 4, y + 16); c.stroke(); }
+      else if (w.type === 'gold') { c.fillStyle = `rgba(184,145,62,${0.5 + 0.4 * Math.sin(w.t * 4)})`; c.fillRect(x, y, 2 * w.s, 2 * w.s); }
+    }
+    c.restore();
+  },
+};
+
+// ==== 08_game.js ====
+// ---------- input: press-and-hold anywhere ----------
+const Input = {
+  ptrs: new Set(), keys: new Set(), get down() { return this.ptrs.size > 0 || this.keys.size > 0 || !!this.bot; }, bot: false,
+};
+cv.addEventListener('pointerdown', e => {
+  if (!G || G.state !== 'play') return;
+  e.preventDefault(); SFX.init();
+  Input.ptrs.add(e.pointerId);
+  try { cv.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+}, { passive: false });
+const ptrUp = e => Input.ptrs.delete(e.pointerId);
+cv.addEventListener('pointerup', ptrUp); cv.addEventListener('pointercancel', ptrUp); cv.addEventListener('lostpointercapture', ptrUp);
+document.addEventListener('touchmove', e => { if (G && G.state === 'play') e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturestart', e => e.preventDefault());
+window.addEventListener('keydown', e => {
+  if (!G) return;
+  if (G.state === 'play' && (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW')) { Input.keys.add(e.code); e.preventDefault(); SFX.init(); }
+  if (e.code === 'Escape' || e.code === 'KeyP') { if (G.state === 'play') pauseGame(); else if (G.state === 'pause') resumeGame(); }
+});
+window.addEventListener('keyup', e => Input.keys.delete(e.code));
+window.addEventListener('blur', () => { Input.ptrs.clear(); Input.keys.clear(); });
+
+// ---------- state ----------
+let G = null;
+function newGame(mode, demo = false) {
+  const daily = mode === 'daily';
+  const seed = daily ? hashStr('mukseon-' + todayKey()) : (Math.random() * 1e9) | 0;
+  G = {
+    state: demo ? 'menu' : 'play', demo, daily, seed, t: 0, player: newPlayer(), anchors: [], items: [], hazards: [],
+    inkY: 420, inkSlow: 0, maxH: 0, score: 0, blossoms: 0, combo: 0, maxCombo: 0, grabs: 0, step: -1, target: null,
+    biome: BIOMES[0], flashT: 0, newSeals: [], fragileSafe: 0, windX: 0, nextMile: 100, deadAt: 0, endShown: false, cause: '',
+  };
+  BGC.seed = seed; BGC.clear();
+  Gen.reset(seed);
+  G.anchors.push(makeAnchor('knot', W / 2, -70, mulberry32(seed + 1)));
+  Gen.ensure(-1200);
+  FX.init();
+  V.camY = G.player.y - V.viewH * 0.6;
+  Input.ptrs.clear(); Input.keys.clear(); Input.bot = false; // the menu autopilot must not leak into a real run
+}
+
+function update(dt) {
+  G.t += dt;
+  const p = G.player;
+  const m = Math.max(0, -p.y / M);
+  if (m > G.maxH) G.maxH = m;
+  const pal = paletteAt(G.maxH);
+  // biome change
+  if (pal.b !== G.biome) {
+    G.biome = pal.b;
+    if (!G.demo) { showBanner(pal.b.en, pal.b.name, pal.b.poem, pal.b.night, 2.8); SFX.milestone(); }
+  }
+  if (!G.demo && G.maxH >= G.nextMile) {
+    if (G.nextMile % 500 === 0) { FX.word(p.x, p.y - 40, fmt(G.nextMile) + ' m', true, true); SFX.milestone(); }
+    G.nextMile += 100;
+  }
+  G.windX = pal.storm > 0.5 ? Math.sin(G.t * 0.35) * 140 + Math.sin(G.t * 1.3) * 40 : 0;
+  if (G.state === 'play') Seals.check();
+  Gen.ensure(V.camY - 900);
+  updateAnchors(dt);
+  if (G.state === 'play' || G.state === 'menu') updatePlayer(p, dt);
+  else stepPlayer(p, dt);
+  updateHazards(dt);
+  // the ink rises: slow at first, faster with height, and it catches up if you dawdle far ahead
+  if (!G.demo && G.state === 'play') {
+    const started = G.grabs > 0 || G.t > 3;
+    let v = started ? Math.min(170, 40 + G.maxH * 0.04) : 0;
+    const gap = G.inkY - p.y;
+    if (gap > 650) v += (gap - 650) * 0.8;
+    if (G.inkSlow > 0) { G.inkSlow -= dt; v *= 0.35; }
+    G.inkY -= v * dt;
+  } else if (G.demo) { G.inkY = Math.max(G.inkY - 20 * dt, p.y + 520); }
+  // prune what has sunk
+  const cut = G.inkY + 400;
+  if (G.anchors.length > 80) G.anchors = G.anchors.filter(a => a.y < cut || (p.rope && p.rope.a === a));
+  if (G.items.length > 120) G.items = G.items.filter(i => !i.got && i.y < cut);
+  if (G.hazards.length > 40) G.hazards = G.hazards.filter(h => !h.dead);
+  // camera
+  const target = p.y - V.viewH * 0.6;
+  V.camY += (target - V.camY) * Math.min(1, dt * (target < V.camY ? 5 : 3));
+  V.camY = Math.min(V.camY, G.inkY - V.viewH * 0.25);
+  G.flashT = Math.max(0, G.flashT - dt);
+  FX.updateWeather(dt, pal);
+  SFX.setWind(Math.hypot((p.x - p.px) / STEP, (p.y - p.py) / STEP), G.state === 'play', pal.storm > 0.5);
+  // random lightning flashes in the storm (harmless, for atmosphere)
+  if (pal.storm > 0.5 && Math.random() < dt * 0.15) { G.flashT = 0.18; SFX.thunder(); }
+}
+
+function die(cause) {
+  if (G.state !== 'play') return;
+  const p = G.player;
+  G.state = 'dead'; G.cause = cause; G.deadAt = performance.now();
+  if (p.rope) p.rope = null;
+  Input.ptrs.clear(); Input.keys.clear();
+  FX.shake(cause === 'ink' ? 6 : 12);
+  if (cause === 'ink') { FX.inkBurst(p.x, G.inkY, 30, 2); SFX.splash(); }
+  else { SFX.hit(); FX.inkBurst(p.x, p.y, 18, 1.4, true); p.px = p.x - (p.x - p.px) * 0.3; p.py = p.y + 400 * STEP; }
+  if (G.daily && cause !== 'quit') Seals.unlock('daily');
+  Seals.check();
+  const key = G.daily ? 'daily-' + todayKey() : 'best';
+  const best = store.get(key, 0);
+  G.isNew = G.maxH > best + 0.5;
+  if (G.isNew) store.set(key, Math.floor(G.maxH));
+  G.best = Math.max(best, Math.floor(G.maxH));
+  if (!G.daily) { const total = store.get('blossoms', 0); store.set('blossoms', total + G.blossoms); }
+}
+
+// ---------- render ----------
+let vignette = null;
+function buildVignette() {
+  vignette = document.createElement('canvas');
+  const w = vignette.width = 200, h = vignette.height = 200, c = vignette.getContext('2d');
+  const g = c.createRadialGradient(w / 2, h / 2, w * 0.3, w / 2, h / 2, w * 0.75);
+  g.addColorStop(0, 'rgba(60,45,30,0)'); g.addColorStop(1, 'rgba(60,45,30,0.35)');
+  c.fillStyle = g; c.fillRect(0, 0, w, h);
+}
+buildVignette();
+
+function render() {
+  const c = ctx, pal = paletteAt(G.maxH);
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+  c.fillStyle = '#2a2622'; c.fillRect(0, 0, cv.width, cv.height);
+  drawBackground(c, pal);
+  // clip the world to the scroll strip
+  c.save();
+  c.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
+  c.beginPath(); c.rect(V.ox, 0, W * V.scale, V.h); c.clip();
+  worldXf(c);
+  drawItems(c, pal);
+  drawHazards(c, pal);
+  drawAnchors(c, pal);
+  drawRope(c, G.player, pal);
+  if (G.state !== 'dead' || G.player.y < G.inkY + 20) drawPlayer(c, G.player, pal);
+  FX.draw(c, pal);
+  drawInk(c, pal);
+  drawHint(c, pal);
+  drawPaperOverlay(c, pal);
+  worldXf(c);
+  FX.drawWords(c, pal);
+  c.restore();
+  FX.drawWeather(c, pal);
+  c.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
+  if (G.flashT > 0) { c.fillStyle = `rgba(255,252,240,${G.flashT * 2.5})`; c.fillRect(V.ox, 0, W * V.scale, V.h); }
+  c.globalAlpha = 1;
+  c.drawImage(vignette, V.ox, 0, W * V.scale, V.h);
+  // ink proximity: the bottom edge darkens as the ink closes in
+  const gap = (G.inkY - G.player.y);
+  if (G.state === 'play' && gap < 260) {
+    const a = clamp(1 - gap / 260, 0, 1) * 0.55, g = c.createLinearGradient(0, V.h * 0.6, 0, V.h);
+    g.addColorStop(0, 'rgba(11,10,9,0)'); g.addColorStop(1, `rgba(11,10,9,${a})`);
+    c.fillStyle = g; c.fillRect(V.ox, V.h * 0.6, W * V.scale, V.h * 0.4);
+  }
+  drawMounting(c);
+  drawUnroll(c);
+}
+
+function drawHint(c, pal) {
+  if (G.demo || G.grabs > 0 || G.state !== 'play') return;
+  const a = G.anchors[0], p = G.player;
+  const k = 0.6 + 0.4 * Math.sin(G.t * 5);
+  c.globalAlpha = k;
+  c.fillStyle = '#b3261e'; c.font = '26px "Nanum Brush Script", serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('꾹 누르고 있으세요', W / 2, p.y + 60);
+  c.font = '15px "Gowun Batang", serif'; c.fillStyle = rgba(pal.ink, 0.8);
+  c.fillText('붉은 원의 매듭에 먹줄이 걸립니다', W / 2, p.y + 86);
+  c.globalAlpha = 1;
+  void a;
+}
+
+// ---------- HUD & screens ----------
+const $ = id => document.getElementById(id);
+const hud = {};
+function setText(id, v) { if (hud[id] !== v) { hud[id] = v; $(id).textContent = v; } }
+function updateHud() {
+  const pal = paletteAt(G.maxH);
+  setText('hH', fmt(Math.floor(G.maxH)));
+  setText('hSub', `${pal.b.name} · 매화 ${G.blossoms}${G.daily ? ' · 오늘의 족자' : ''}`);
+  const night = pal.night > 0.5;
+  if (hud.night !== night) { hud.night = night; $('hud').classList.toggle('night', night); }
+  const cmb = G.combo > 1 ? `연속 ${G.combo}` : '';
+  if (hud.combo !== cmb) { hud.combo = cmb; $('hCombo').textContent = cmb; $('hCombo').classList.toggle('on', !!cmb); }
+}
+function updatePows() {
+  const p = G.player, el = $('hPows'); let h = '';
+  h += `<span class="lives" aria-label="남은 낙관 ${p.lives}">${'<i class="on"></i>'.repeat(Math.max(0, p.lives))}${'<i></i>'.repeat(Math.max(0, 3 - p.lives))}</span>`;
+  if (p.shield) h += `<span class="pow"><i>符</i><b>${p.shield}</b></span>`;
+  if (p.feather) h += `<span class="pow"><i style="background:#1b1a17">羽</i><b>${p.feather}</b></span>`;
+  el.innerHTML = h;
+}
+let bannerT = 0;
+function showBanner(a, b, c2, night, dur) {
+  $('bn1').textContent = a; $('bn2').textContent = b; $('bn3').textContent = c2;
+  const el = $('banner'); el.classList.toggle('night', !!night); el.classList.add('show');
+  clearTimeout(bannerT); bannerT = setTimeout(() => el.classList.remove('show'), dur * 1000);
+}
+function showScreen(id) { for (const s of ['scrMenu', 'scrPause', 'scrEnd', 'scrSeals']) $(s).hidden = s !== id; }
+
+function startRun(mode) {
+  SFX.init();
+  newGame(mode);
+  $('hud').hidden = false; showScreen(null);
+  for (const k in hud) delete hud[k];
+  updatePows();
+  showBanner(G.daily ? '오늘의 족자 · ' + todayKey() : BIOMES[0].en, BIOMES[0].name, BIOMES[0].poem, false, 2.4);
+  last = performance.now();
+}
+function toMenu() {
+  newGame('normal', true);
+  $('hud').hidden = true; showScreen('scrMenu');
+  const best = store.get('best', 0), daily = store.get('daily-' + todayKey(), 0);
+  $('bestLine').textContent = [best ? `최고 ${fmt(best)} m` : '', daily ? `오늘의 족자 ${fmt(daily)} m` : ''].filter(Boolean).join(' · ');
+}
+function pauseGame() { if (G.state !== 'play') return; G.state = 'pause'; Input.ptrs.clear(); Input.keys.clear(); showScreen('scrPause'); }
+function resumeGame() { if (G.state !== 'pause') return; SFX.init(); G.state = 'play'; showScreen(null); last = performance.now(); }
+const CAUSE = {
+  ink: '차오르는 먹물에 잠겼습니다.', crow: '까마귀와 부딪혀 떨어졌습니다.', spirit: '먹귀신에 닿아 손을 놓쳤습니다.',
+  bolt: '번개가 먹줄을 끊었습니다.', rock: '굴러떨어진 바위에 맞았습니다.', quit: '붓을 내려놓았습니다.',
+};
+function showEnd() {
+  $('endK').textContent = G.cause === 'ink' ? '먹물에 잠기다' : '떨어지다';
+  $('endH').textContent = fmt(Math.floor(G.maxH)) + ' m';
+  $('endNew').hidden = !G.isNew;
+  $('endLede').textContent = `${biomeAt(G.maxH).name}에서 ${CAUSE[G.cause] || ''}`;
+  const rows = [['도달 높이', fmt(Math.floor(G.maxH)) + ' m'], ['모은 매화', G.blossoms], ['최대 연속', G.maxCombo], ['먹줄을 건 횟수', G.grabs]];
+  $('endStats').innerHTML = rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
+  $('endBest').textContent = (G.daily ? `오늘의 족자 최고 ${fmt(G.best)} m` : `최고 기록 ${fmt(G.best)} m`) + (G.newSeals.length ? ` · 새 낙관 ${G.newSeals.join(', ')}` : '');
+  showScreen('scrEnd'); $('hud').hidden = true;
+}
+
+$('btnStart').addEventListener('click', () => startRun('normal'));
+$('btnDaily').addEventListener('click', () => startRun('daily'));
+$('btnSeals').addEventListener('click', openSeals);
+$('btnSealsBack').addEventListener('click', () => showScreen('scrMenu'));
+$('btnRetry').addEventListener('click', () => startRun(G && G.daily ? 'daily' : 'normal'));
+$('btnMenu').addEventListener('click', toMenu);
+$('btnPause').addEventListener('click', pauseGame);
+$('btnResume').addEventListener('click', resumeGame);
+$('btnQuit').addEventListener('click', () => { if (G.state === 'pause') { G.state = 'play'; showScreen(null); die('quit'); } });
+function setToggle(id, on) { const b = $(id); b.classList.toggle('on', on); b.textContent = on ? '켜짐' : '꺼짐'; }
+$('tgSound').addEventListener('click', () => { SFX.on = !SFX.on; store.set('sound', SFX.on); setToggle('tgSound', SFX.on); });
+$('tgShake').addEventListener('click', () => { FX.shakeOn = !FX.shakeOn; store.set('shake', FX.shakeOn); setToggle('tgShake', FX.shakeOn); });
+SFX.on = store.get('sound', true); setToggle('tgSound', SFX.on); setToggle('tgShake', FX.shakeOn);
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+
+// attract mode on the menu: a simple autopilot climbs behind the title
+function demoPilot() {
+  const p = G.player;
+  if (p.rope) { const v = vel(p); Input.bot = !(v.y < -650 || p.rope.L <= LMIN + 2 || p.y < p.rope.a.y - 10); }
+  else { const v = vel(p); Input.bot = v.y > -120 && !!findTarget(p); }
+}
+
+let last = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  let dt = (now - last) / 1000; last = now;
+  if (!(dt > 0)) dt = 0; dt = Math.min(dt, 0.05);
+  try {
+    if (G.state === 'menu') { demoPilot(); update(dt); if (G.player.y > G.inkY - 30) newGame('normal', true); }
+    else if (G.state === 'play') update(dt);
+    else if (G.state === 'dead') { update(dt); if (performance.now() - G.deadAt > 1500 && !G.endShown) { G.endShown = true; showEnd(); } }
+    if (G.state !== 'menu') Input.bot = false;
+    FX.update(dt);
+    render();
+    if (G.state === 'play') updateHud();
+  } catch (err) { console.error(err); }
+}
+
+function boot() { resize(); toMenu(); requestAnimationFrame(t => { last = t; frame(t); }); }
+if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot();
+
+</script>
+</body>
+</html>
